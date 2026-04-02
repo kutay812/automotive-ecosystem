@@ -1,0 +1,55 @@
+@import "tailwindcss";
+
+:root {
+  --background: #020202; /* Extra pure OLED black */
+  --foreground: #fafafa; /* Crisp bright white */
+  
+  --primary: #FF5A00; /* Innovative fluid orange */
+  --secondary: #FFFFFF; /* High contrast white */
+  --accent: #FF7D00; /* Intense glowing orange */
+  
+  --glass-bg: rgba(255, 90, 0, 0.03); /* Subtle orange glass tint */
+  --glass-border: rgba(255, 255, 255, 0.08); /* Crisp edge */
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  
+  --color-primary: var(--primary);
+  --color-secondary: var(--secondary);
+  --color-accent: var(--accent);
+  
+  --font-sans: 'Inter', system-ui, sans-serif;
+  
+  --animate-float: float 6s ease-in-out infinite;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #020202;
+    --foreground: #fafafa;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  overflow-x: hidden;
+}
+
+/* Anti-Gravity Utilities */
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+}
+
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+  100% { transform: translateY(0px); }
+}

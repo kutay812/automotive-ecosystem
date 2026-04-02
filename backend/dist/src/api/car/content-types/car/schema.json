@@ -1,0 +1,69 @@
+{
+    "kind": "collectionType",
+    "collectionName": "cars",
+    "info": {
+        "singularName": "car",
+        "pluralName": "cars",
+        "displayName": "Car",
+        "description": "Rent a car entity"
+    },
+    "options": {
+        "draftAndPublish": true
+    },
+    "pluginOptions": {},
+    "attributes": {
+        "brand": {
+            "type": "string"
+        },
+        "model": {
+            "type": "string"
+        },
+        "year": {
+            "type": "integer"
+        },
+        "pricePerDay": {
+            "type": "decimal"
+        },
+        "description": {
+            "type": "text"
+        },
+        "image": {
+            "type": "media",
+            "multiple": false,
+            "required": false,
+            "allowedTypes": [
+                "images"
+            ]
+        },
+        "isAvailable": {
+            "type": "boolean",
+            "default": true
+        },
+        "transmission": {
+            "type": "enumeration",
+            "enum": [
+                "Otomatik",
+                "Manuel"
+            ],
+            "default": "Otomatik"
+        },
+        "fuelType": {
+            "type": "enumeration",
+            "enum": [
+                "Benzin",
+                "Dizel",
+                "Elektrik",
+                "Hibrit"
+            ],
+            "default": "Benzin"
+        },
+        "passengerCount": {
+            "type": "integer",
+            "default": 5
+        },
+        "luggageCount": {
+            "type": "integer",
+            "default": 2
+        }
+    }
+}
