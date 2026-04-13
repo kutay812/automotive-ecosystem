@@ -1,0 +1,12 @@
+node_modules
+.next
+.strapi
+.cache
+build
+dist
+out
+.env
+.DS_Store
+*.log
+backend/node_modules
+frontend/node_modules

@@ -39,15 +39,17 @@ export default function Navbar({ user }: { user?: any }) {
 
         {/* Desktop Nav */}
         <nav className="hidden md:flex gap-8 items-center">
-          <NavLink href="/">Kurumsal</NavLink>
+          <NavLink href="/">Ana sayfa</NavLink>
           <NavLink href="/rentacar">Araç Kiralama</NavLink>
-          <NavLink href="/production">Prodüksiyon</NavLink>
-          
+          <NavLink href="/production">Medya</NavLink>
+
           {user ? (
             <div className="flex gap-4 items-center pl-6 border-l border-white/20 ml-2">
-              <span className="text-sm font-bold text-gray-200">Hi, {user.username}</span>
-              <button 
-                onClick={() => logoutUser()} 
+              <Link href="/profile" className="text-sm font-bold text-gray-200 hover:text-primary transition-colors cursor-pointer">
+                Merhaba, {user.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : user.username}
+              </Link>
+              <button
+                onClick={() => logoutUser()}
                 className="text-xs px-3 py-1.5 bg-white/10 hover:bg-red-500/80 text-white rounded-md transition-colors"
               >
                 Çıkış Yap
@@ -72,35 +74,37 @@ export default function Navbar({ user }: { user?: any }) {
         </nav>
 
         {/* Mobile Toggle */}
-        <button 
+        <button
           className="md:hidden text-white"
           onClick={() => setIsOpen(!isOpen)}
         >
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-             {isOpen ? (
-               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-             ) : (
-               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-             )}
+            {isOpen ? (
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            ) : (
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            )}
           </svg>
         </button>
       </div>
 
       {/* Mobile Menu */}
       {isOpen && (
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           className="md:hidden absolute top-full left-0 w-full glass p-6 flex flex-col gap-4 border-t border-white/10"
         >
           <Link href="/" onClick={() => setIsOpen(false)} className="text-white hover:text-primary transition-colors">Kurumsal</Link>
           <Link href="/rentacar" onClick={() => setIsOpen(false)} className="text-white hover:text-primary transition-colors">Araç Kiralama</Link>
-          <Link href="/production" onClick={() => setIsOpen(false)} className="text-white hover:text-primary transition-colors">Prodüksiyon</Link>
-          
+          <Link href="/production" onClick={() => setIsOpen(false)} className="text-white hover:text-primary transition-colors">Medya</Link>
+
           <div className="border-t border-white/10 my-1 pt-4">
             {user ? (
               <div className="flex justify-between items-center w-full">
-                <span className="text-sm font-bold text-white">{user.username}</span>
+                <Link href="/profile" onClick={() => setIsOpen(false)} className="text-sm font-bold text-white hover:text-primary transition-colors">
+                  {user.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : user.username}
+                </Link>
                 <button onClick={() => { setIsOpen(false); logoutUser() }} className="text-red-400 text-sm font-bold">Çıkış Yap</button>
               </div>
             ) : (
@@ -108,8 +112,8 @@ export default function Navbar({ user }: { user?: any }) {
             )}
           </div>
 
-          <button 
-            onClick={() => { setIsOpen(false); setIsContactOpen(true); }} 
+          <button
+            onClick={() => { setIsOpen(false); setIsContactOpen(true); }}
             className="w-full text-left text-primary hover:text-white transition-colors"
           >
             İletişim

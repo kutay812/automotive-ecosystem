@@ -1,4 +1,3 @@
-
 services:
   postgres:
     image: postgres:15-alpine
@@ -47,16 +46,19 @@ services:
     ports:
       - "1337:1337"
     environment:
-      - DATABASE_CLIENT=postgres
       - DATABASE_HOST=postgres
       - DATABASE_PORT=5432
       - DATABASE_NAME=${DATABASE_NAME:-vizyonarc_db}
       - DATABASE_USERNAME=${DATABASE_USER:-vizyonarc}
       - DATABASE_PASSWORD=${DATABASE_PASSWORD:-vizyonarc_pwd}
-      - NODE_ENV=development
+      - JWT_SECRET=visionarc-jwt-secret-2026
+      - GOOGLE_CLIENT_ID=84891669263-e9vicruv2kd4kmv4a8mukm2t2jren9vg.apps.googleusercontent.com
+      - GOOGLE_CLIENT_SECRET=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
+      - FRONTEND_URL=http://localhost:3000
+      - PORT=1337
     volumes:
       - ./backend:/opt/app
-      - /opt/node_modules
+      - /opt/app/node_modules
     networks:
       - vizyonarc-network
     depends_on:
@@ -73,6 +75,8 @@ services:
       - "3000:3000"
     environment:
       - NODE_ENV=development
+      - INTERNAL_API_URL=http://backend:1337
+      - NEXT_PUBLIC_STRAPI_URL=http://localhost:1337
     volumes:
       - ./frontend:/app
       - /app/node_modules

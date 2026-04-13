@@ -1,0 +1,57 @@
+{
+    "kind": "collectionType",
+    "collectionName": "rentals",
+    "info": {
+        "singularName": "rental",
+        "pluralName": "rentals",
+        "displayName": "Rental",
+        "description": "Araç Kiralama Rezervasyon ve İşlemleri"
+    },
+    "options": {
+        "draftAndPublish": false
+    },
+    "pluginOptions": {},
+    "attributes": {
+        "rentalStatus": {
+            "type": "enumeration",
+            "enum": [
+                "bekliyor",
+                "aktif",
+                "uzatma_talep",
+                "iade_bildirildi",
+                "bitti",
+                "iptal"
+            ],
+            "default": "bekliyor"
+        },
+        "requestedEndDate": {
+            "type": "date"
+        },
+        "user": {
+            "type": "relation",
+            "relation": "oneToOne",
+            "target": "plugin::users-permissions.user"
+        },
+        "car": {
+            "type": "relation",
+            "relation": "oneToOne",
+            "target": "api::car.car"
+        },
+        "pickupOffice": {
+            "type": "string",
+            "required": true
+        },
+        "dropoffOffice": {
+            "type": "string",
+            "required": true
+        },
+        "startDate": {
+            "type": "date",
+            "required": true
+        },
+        "endDate": {
+            "type": "date",
+            "required": true
+        }
+    }
+}

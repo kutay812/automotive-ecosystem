@@ -1,5 +1,18 @@
-const INTERNAL_API_URL = process.env.INTERNAL_API_URL || 'http://backend:1337';
-const STRAPI_URL = process.env.NEXT_PUBLIC_STRAPI_URL || 'http://localhost:1337';
+// In Docker, INTERNAL_API_URL should be http://backend:1337
+const INTERNAL_API_URL = process.env.INTERNAL_API_URL || 'http://127.0.0.1:1337';
+
+// In Browser, STRAPI_URL should be http://localhost:1337 (or your domain)
+const STRAPI_URL = process.env.NEXT_PUBLIC_STRAPI_URL || 'http://127.0.0.1:1337';
+
+/**
+ * Normalizes media URLs. If it starts with /uploads, prepends the backend URL.
+ */
+export function getMediaUrl(url: string | null | undefined): string {
+  if (!url) return '';
+  if (url.startsWith('http') || url.startsWith('data:')) return url;
+  if (url.startsWith('/uploads')) return `${STRAPI_URL}${url}`;
+  return url;
+}
 
 /**
  * Generic fetch wrapper for Strapi Backend
@@ -39,6 +52,11 @@ export async function getProjects() {
 
 export async function getOffices() {
   return await fetchAPI('/api/offices?filters[isActive][$eq]=true');
+}
+
+export async function getActiveRentals() {
+  // Fetch rentals that are not cancelled or finished, to prevent double booking
+  return await fetchAPI('/api/rentals?filters[rentalStatus][$notIn][0]=bitti&filters[rentalStatus][$notIn][1]=iptal&populate=car');
 }
 
 export async function submitLead(data: any) {

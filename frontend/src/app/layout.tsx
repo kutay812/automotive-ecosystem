@@ -4,6 +4,7 @@ import Script from "next/script";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { getUser } from "@/lib/session";
+import { headers } from "next/headers";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -27,6 +28,10 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const user = await getUser();
+  const headersList = await headers();
+  const pathname = headersList.get("x-pathname") || "";
+  
+  const isAdminPage = pathname.startsWith("/yonetim");
 
   return (
     <html
@@ -44,12 +49,13 @@ export default async function RootLayout({
           />
         </noscript>
         
-        {/* Navbar and Page Content */}
-        <Navbar user={user} />
-        <div className="flex-grow pt-16">
+        {!isAdminPage && <Navbar user={user} />}
+        
+        <div className={`flex-grow ${!isAdminPage ? 'pt-16' : ''}`}>
           {children}
         </div>
-        <Footer />
+        
+        {!isAdminPage && <Footer />}
         
         <Script id="gtm-script" strategy="afterInteractive">
           {`

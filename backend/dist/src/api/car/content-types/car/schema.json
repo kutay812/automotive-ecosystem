@@ -19,7 +19,7 @@
             "type": "string"
         },
         "year": {
-            "type": "integer"
+            "type": "biginteger"
         },
         "pricePerDay": {
             "type": "decimal"
@@ -41,21 +41,21 @@
         },
         "transmission": {
             "type": "enumeration",
+            "default": "Otomatik",
             "enum": [
                 "Otomatik",
                 "Manuel"
-            ],
-            "default": "Otomatik"
+            ]
         },
         "fuelType": {
             "type": "enumeration",
+            "default": "Benzin",
             "enum": [
                 "Benzin",
                 "Dizel",
                 "Elektrik",
                 "Hibrit"
-            ],
-            "default": "Benzin"
+            ]
         },
         "passengerCount": {
             "type": "integer",
@@ -64,6 +64,9 @@
         "luggageCount": {
             "type": "integer",
             "default": 2
+        },
+        "availableUntil": {
+            "type": "date"
         }
     }
 }

@@ -1,15 +1,27 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense, useEffect } from 'react';
 import { loginUser, registerUser } from '@/app/actions/auth';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useSearchParams } from 'next/navigation';
 
-const STRAPI_URL = process.env.NEXT_PUBLIC_STRAPI_URL || 'http://localhost:1337';
+const STRAPI_URL = process.env.NEXT_PUBLIC_STRAPI_URL || 'http://127.0.0.1:1337';
 
-export default function AuthPage() {
+function AuthContent() {
+  const searchParams = useSearchParams();
   const [isLogin, setIsLogin] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const errorMsg = searchParams.get('errorMsg');
+    const strapiError = searchParams.get('error');
+    if (errorMsg) {
+      setError(decodeURIComponent(errorMsg));
+    } else if (strapiError) {
+      setError(`Strapi Error: ${decodeURIComponent(strapiError)}`);
+    }
+  }, [searchParams]);
 
   const handleAction = async (formData: FormData) => {
     setLoading(true);
@@ -22,7 +34,10 @@ export default function AuthPage() {
   };
 
   const googleLogin = () => {
-    window.location.href = `${STRAPI_URL}/api/connect/google`;
+    // NextJS callback URL (MUST be added to Google Console as well)
+    const callbackURL = `${window.location.origin}/callback/google`;
+    // Redundant force for consent prompt directly in the initiation URL
+    window.location.href = `${STRAPI_URL}/api/connect/google?callback=${callbackURL}&prompt=consent&access_type=offline`;
   };
 
   return (
@@ -67,14 +82,28 @@ export default function AuthPage() {
                 exit={{ opacity: 0, height: 0, scale: 0.95 }}
                 transition={{ duration: 0.2 }}
               >
-                <label className="block text-xs font-bold text-gray-400 mb-2 uppercase tracking-wide">Ad Soyad (Username)</label>
-                <input 
-                  name="name"
-                  type="text" 
-                  required={!isLogin}
-                  placeholder="Adınız Soyadınız"
-                  className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary transition-colors"
-                />
+                <div className="flex gap-4">
+                  <div className="w-1/2">
+                    <label className="block text-xs font-bold text-gray-400 mb-2 uppercase tracking-wide">Ad</label>
+                    <input 
+                      name="firstName"
+                      type="text" 
+                      required={!isLogin}
+                      placeholder="Adınız"
+                      className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary transition-colors"
+                    />
+                  </div>
+                  <div className="w-1/2">
+                    <label className="block text-xs font-bold text-gray-400 mb-2 uppercase tracking-wide">Soyad</label>
+                    <input 
+                      name="lastName"
+                      type="text" 
+                      required={!isLogin}
+                      placeholder="Soyadınız"
+                      className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary transition-colors"
+                    />
+                  </div>
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
@@ -133,5 +162,13 @@ export default function AuthPage() {
         </button>
       </div>
     </div>
+  );
+}
+
+export default function AuthPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen pt-24 px-6 flex items-center justify-center">Yükleniyor...</div>}>
+      <AuthContent />
+    </Suspense>
   );
 }

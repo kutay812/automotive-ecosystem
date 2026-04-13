@@ -28,6 +28,7 @@ export async function loginUser(prevState: any, formData: FormData) {
     httpOnly: true,
     secure: false, // Localhost / Container testleri için false'a çekildi
     sameSite: 'lax',
+    path: '/',
     maxAge: 60 * 60 * 24 * 7 // 1 week
   });
 
@@ -35,11 +36,16 @@ export async function loginUser(prevState: any, formData: FormData) {
 }
 
 export async function registerUser(prevState: any, formData: FormData) {
-  const username = formData.get('name');
-  const email = formData.get('email');
+  const firstName = String(formData.get('firstName') || '').trim();
+  const lastName = String(formData.get('lastName') || '').trim();
+  const email = String(formData.get('email') || '').trim();
   const password = formData.get('password');
 
-  if (!username || !email || !password) return { error: 'Lütfen tüm alanları doldurun.' };
+  // Strapi local auth requires a 'username' which has a strict unique constraint.
+  // Çakışmaları önlemek için username olarak doğrudan benzersiz olan e-postayı kullanıyoruz.
+  const username = email;
+
+  if (!firstName || !lastName || !email || !password) return { error: 'Lütfen tüm alanları doldurun.' };
 
   const res = await fetch(`${INTERNAL_API_URL}/api/auth/local/register`, {
     method: 'POST',
@@ -53,11 +59,30 @@ export async function registerUser(prevState: any, formData: FormData) {
     return { error: data.error.message || 'Kayıt olurken bir hata oluştu.' };
   }
 
+  // --- MANUEL KAYIT AD SOYAD YAMASI ---
+  try {
+    await fetch(`${INTERNAL_API_URL}/api/user-extension/update-profile`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userId: data.user.id,
+        username: username,
+        firstName: firstName,
+        lastName: lastName,
+        secret: 'visionarc-secret-google-123'
+      })
+    });
+  } catch (e) {
+    console.error("Manuel kayit ad soyad guncellenemedi", e);
+  }
+  // --- YAMA SONU ---
+
   const cookieStore = await cookies();
   cookieStore.set('jwt', data.jwt, {
     httpOnly: true,
     secure: false, // Localhost / Container testleri için false'a çekildi
     sameSite: 'lax',
+    path: '/',
     maxAge: 60 * 60 * 24 * 7
   });
 
@@ -68,4 +93,17 @@ export async function logoutUser() {
   const cookieStore = await cookies();
   cookieStore.delete('jwt');
   redirect('/');
+}
+
+export async function setOauthSession(jwt: string) {
+  const cookieStore = await cookies();
+  cookieStore.set('jwt', jwt, {
+    httpOnly: true,
+    secure: false, // Localhost / Container testleri için false'a çekildi
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 60 * 60 * 24 * 7
+  });
+  
+  return { success: true };
 }

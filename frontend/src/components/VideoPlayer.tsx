@@ -1,4 +1,4 @@
-'use client';
+import { getMediaUrl } from '@/lib/api';
 
 export default function VideoPlayer({ url }: { url: string }) {
   const isYouTube = url.includes('youtube.com') || url.includes('youtu.be');
@@ -73,7 +73,7 @@ export default function VideoPlayer({ url }: { url: string }) {
       controls 
       controlsList="nodownload"
       className="w-full h-full absolute inset-0 z-50 rounded-xl object-contain bg-transparent"
-      src={url}
+      src={getMediaUrl(url)}
       playsInline
     />
   );
