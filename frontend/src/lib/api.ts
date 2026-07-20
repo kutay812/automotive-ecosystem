@@ -1,5 +1,5 @@
 // In Docker, INTERNAL_API_URL should be http://backend:1337
-const INTERNAL_API_URL = process.env.INTERNAL_API_URL || 'http://127.0.0.1:1337';
+const INTERNAL_API_URL = process.env.INTERNAL_API_URL || 'http://backend:1337';
 
 // In Browser, STRAPI_URL should be http://localhost:1337 (or your domain)
 const STRAPI_URL = process.env.NEXT_PUBLIC_STRAPI_URL || 'http://127.0.0.1:1337';
@@ -42,8 +42,9 @@ export async function fetchAPI(path: string, options: RequestInit = {}) {
   }
 }
 
-export async function getCars() {
-  return await fetchAPI('/api/cars?populate=*');
+export async function getCars(pickupOffice?: string) {
+  const qs = pickupOffice ? `?pickupOffice=${encodeURIComponent(pickupOffice)}&populate=*` : '?populate=*';
+  return await fetchAPI(`/api/cars${qs}`);
 }
 
 export async function getProjects() {

@@ -92,7 +92,7 @@ export default function RoleManagementClient({ roles: initialRoles, allPermissio
     setSaving(true);
     const res = await updateRolePermissions(selectedRole.id, Array.from(selectedPerms));
     setSaving(false);
-    if (res.error) alert(res.error);
+    if ('error' in res && res.error) alert(res.error);
     else router.refresh();
   };
 
@@ -106,7 +106,7 @@ export default function RoleManagementClient({ roles: initialRoles, allPermissio
     setSaving(true);
     const res = await createRole(name, description);
     setSaving(false);
-    if (res.error) alert(res.error);
+    if ('error' in res && res.error) alert(res.error);
     else { setShowCreateForm(false); router.refresh(); }
   };
 
@@ -121,7 +121,7 @@ export default function RoleManagementClient({ roles: initialRoles, allPermissio
       description: form.get('description') as string,
     });
     setSaving(false);
-    if (res.error) alert(res.error);
+    if ('error' in res && res.error) alert(res.error);
     else { setEditingName(false); router.refresh(); }
   };
 
@@ -131,7 +131,7 @@ export default function RoleManagementClient({ roles: initialRoles, allPermissio
     setSaving(true);
     const res = await deleteRole(role.id);
     setSaving(false);
-    if (res.error) alert(res.error);
+    if ('error' in res && res.error) alert(res.error);
     else { setSelectedRole(null); router.refresh(); }
   };
 
@@ -141,7 +141,7 @@ export default function RoleManagementClient({ roles: initialRoles, allPermissio
     setSaving(true);
     const res = await assignUsersToRole(selectedRole.id, [userId]);
     setSaving(false);
-    if (res.error) alert(res.error);
+    if ('error' in res && res.error) alert(res.error);
     else router.refresh();
   };
 

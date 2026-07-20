@@ -1,15 +1,52 @@
 @import "tailwindcss";
 
+/* ========================
+   AUTOELITE DESIGN SYSTEM
+   Stitch Premium Otomotiv Tasarımı
+   ======================== */
+
 :root {
-  --background: #020202; /* Extra pure OLED black */
-  --foreground: #fafafa; /* Crisp bright white */
+  /* Core Colors - AUTOELITE Palette */
+  --background: #faf9fe;
+  --foreground: #1a1b1f;
   
-  --primary: #FF5A00; /* Innovative fluid orange */
-  --secondary: #FFFFFF; /* High contrast white */
-  --accent: #FF7D00; /* Intense glowing orange */
+  --primary: #000000;
+  --primary-container: #1c1b1b;
+  --on-primary: #ffffff;
+  --on-primary-container: #858383;
   
-  --glass-bg: rgba(255, 90, 0, 0.03); /* Subtle orange glass tint */
-  --glass-border: rgba(255, 255, 255, 0.08); /* Crisp edge */
+  --secondary: #0058bc;
+  --secondary-container: #0070eb;
+  --on-secondary: #ffffff;
+  --on-secondary-container: #fefcff;
+  
+  --tertiary: #f5f5f7;
+  --tertiary-container: #1a1c1d;
+  
+  --surface: #faf9fe;
+  --surface-container: #eeedf3;
+  --surface-container-low: #f4f3f8;
+  --surface-container-high: #e9e7ed;
+  --surface-container-highest: #e3e2e7;
+  --surface-container-lowest: #ffffff;
+  --surface-dim: #dad9df;
+  --surface-variant: #e3e2e7;
+  --on-surface: #1a1b1f;
+  --on-surface-variant: #444748;
+  
+  --outline: #747878;
+  --outline-variant: #c4c7c7;
+  
+  --error: #ba1a1a;
+  --error-container: #ffdad6;
+  --on-error: #ffffff;
+  --on-error-container: #93000a;
+  
+  --inverse-surface: #2f3034;
+  --inverse-on-surface: #f1f0f5;
+  
+  /* Neutral */
+  --neutral: #8e8e93;
 }
 
 @theme inline {
@@ -17,19 +54,46 @@
   --color-foreground: var(--foreground);
   
   --color-primary: var(--primary);
-  --color-secondary: var(--secondary);
-  --color-accent: var(--accent);
+  --color-primary-container: var(--primary-container);
+  --color-on-primary: var(--on-primary);
+  --color-on-primary-container: var(--on-primary-container);
   
-  --font-sans: 'Inter', system-ui, sans-serif;
+  --color-secondary: var(--secondary);
+  --color-secondary-container: var(--secondary-container);
+  --color-on-secondary: var(--on-secondary);
+  --color-on-secondary-container: var(--on-secondary-container);
+  
+  --color-tertiary: var(--tertiary);
+  --color-tertiary-container: var(--tertiary-container);
+  
+  --color-surface: var(--surface);
+  --color-surface-container: var(--surface-container);
+  --color-surface-container-low: var(--surface-container-low);
+  --color-surface-container-high: var(--surface-container-high);
+  --color-surface-container-highest: var(--surface-container-highest);
+  --color-surface-container-lowest: var(--surface-container-lowest);
+  --color-surface-dim: var(--surface-dim);
+  --color-surface-variant: var(--surface-variant);
+  --color-on-surface: var(--on-surface);
+  --color-on-surface-variant: var(--on-surface-variant);
+  
+  --color-outline: var(--outline);
+  --color-outline-variant: var(--outline-variant);
+  
+  --color-error: var(--error);
+  --color-error-container: var(--error-container);
+  --color-on-error: var(--on-error);
+  --color-on-error-container: var(--on-error-container);
+  
+  --color-inverse-surface: var(--inverse-surface);
+  --color-inverse-on-surface: var(--inverse-on-surface);
+  
+  --color-neutral: var(--neutral);
+  
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
   
   --animate-float: float 6s ease-in-out infinite;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #020202;
-    --foreground: #fafafa;
-  }
+  --animate-shimmer: shimmer 2.5s ease-in-out infinite;
 }
 
 body {
@@ -37,19 +101,299 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans);
   overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-size: 16px;
+  line-height: 24px;
 }
 
-/* Anti-Gravity Utilities */
-.glass {
-  background: var(--glass-bg);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid var(--glass-border);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+/* ========================
+   TYPOGRAPHY SYSTEM
+   ======================== */
+.text-display-lg {
+  font-size: 48px;
+  line-height: 56px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
 }
 
+.text-display-lg-mobile {
+  font-size: 32px;
+  line-height: 40px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.text-headline-md {
+  font-size: 24px;
+  line-height: 32px;
+  font-weight: 700;
+}
+
+.text-headline-sm {
+  font-size: 20px;
+  line-height: 28px;
+  font-weight: 600;
+}
+
+.text-body-lg {
+  font-size: 18px;
+  line-height: 28px;
+  font-weight: 400;
+}
+
+.text-body-md {
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 400;
+}
+
+.text-label-md {
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
+.text-caption {
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 400;
+}
+
+/* ========================
+   CARD SYSTEM
+   ======================== */
+.card {
+  background: var(--surface-container-lowest);
+  border: 1px solid var(--outline-variant);
+  border-radius: 0.5rem;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card:hover {
+  box-shadow: 0 4px 20px rgba(26, 26, 26, 0.05);
+  transform: translateY(-2px);
+}
+
+.card-dark {
+  background: var(--primary-container);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.75rem;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card-dark:hover {
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+}
+
+/* ========================
+   BUTTON SYSTEM
+   ======================== */
+.btn-primary {
+  background: var(--primary);
+  color: var(--on-primary);
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 0.05em;
+  border: none;
+  border-radius: 0.25rem;
+  padding: 12px 24px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.btn-primary:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.btn-secondary {
+  background: transparent;
+  color: var(--primary);
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 0.05em;
+  border: 1px solid var(--primary);
+  border-radius: 0.25rem;
+  padding: 12px 24px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.btn-secondary:hover {
+  background: var(--primary);
+  color: var(--on-primary);
+}
+
+.btn-cta {
+  background: var(--secondary);
+  color: var(--on-secondary);
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 0.05em;
+  border: none;
+  border-radius: 0.25rem;
+  padding: 12px 32px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 88, 188, 0.2);
+}
+
+.btn-cta:hover {
+  background: var(--secondary-container);
+  box-shadow: 0 4px 16px rgba(0, 88, 188, 0.3);
+  transform: translateY(-1px);
+}
+
+/* ========================
+   STATUS CHIPS
+   ======================== */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 16px;
+}
+
+.chip-available {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.chip-unavailable {
+  background: var(--error-container);
+  color: var(--on-error-container);
+}
+
+.chip-limited {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+/* ========================
+   FORM INPUTS
+   ======================== */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="tel"],
+input[type="date"],
+input[type="number"],
+textarea,
+select {
+  font-family: var(--font-sans);
+  background: var(--surface-container-lowest);
+  border: 1px solid var(--outline-variant);
+  color: var(--on-surface);
+  border-radius: 0.25rem;
+  padding: 10px 16px;
+  font-size: 16px;
+  line-height: 24px;
+  transition: border-color 0.2s ease;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: var(--secondary);
+  box-shadow: 0 0 0 2px rgba(0, 88, 188, 0.1);
+}
+
+/* Admin panel inputs - keep dark theme */
+.admin-panel input[type="text"],
+.admin-panel input[type="email"],
+.admin-panel input[type="password"],
+.admin-panel input[type="tel"],
+.admin-panel input[type="date"],
+.admin-panel input[type="number"],
+.admin-panel textarea,
+.admin-panel select {
+  background-color: #0c0c0c !important;
+  color: #f5f5f5 !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Admin panel select option styling */
+.admin-panel select option {
+  background-color: #0c0c0c !important;
+  color: #f5f5f5 !important;
+}
+
+/* ========================
+   SECTION DIVIDERS
+   ======================== */
+.section-divider {
+  height: 1px;
+  background: var(--outline-variant);
+}
+
+/* ========================
+   AMBIENT SHADOW
+   ======================== */
+.shadow-ambient {
+  box-shadow: 0 4px 20px rgba(26, 26, 26, 0.05);
+}
+
+.shadow-ambient-hover:hover {
+  box-shadow: 0 8px 30px rgba(26, 26, 26, 0.08);
+}
+
+/* ========================
+   MATERIAL SYMBOLS
+   ======================== */
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+.icon-fill {
+  font-variation-settings: 'FILL' 1;
+}
+
+/* ========================
+   SCROLLBAR
+   ======================== */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 5px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--outline-variant);
+  border-radius: 10px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--outline);
+}
+
+/* ========================
+   KEYFRAMES
+   ======================== */
 @keyframes float {
   0% { transform: translateY(0px); }
   50% { transform: translateY(-10px); }
   100% { transform: translateY(0px); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* ========================
+   GRADIENT TEXT
+   ======================== */
+.text-gradient-primary {
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }

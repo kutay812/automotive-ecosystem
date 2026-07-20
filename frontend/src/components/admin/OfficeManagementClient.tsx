@@ -20,6 +20,9 @@ export default function OfficeManagementClient({ offices: initialOffices }: { of
       city: formData.get('city') as string,
       address: formData.get('address') as string,
       phone: formData.get('phone') as string,
+      location: formData.get('location') as string,
+      openingTime: formData.get('openingTime') as string,
+      closingTime: formData.get('closingTime') as string,
     };
 
     let res;
@@ -30,7 +33,7 @@ export default function OfficeManagementClient({ offices: initialOffices }: { of
     }
 
     setLoading(false);
-    if (res.error) {
+    if ('error' in res && res.error) {
       alert(res.error);
     } else {
       setShowForm(false);
@@ -41,14 +44,14 @@ export default function OfficeManagementClient({ offices: initialOffices }: { of
 
   const handleToggleStatus = async (office: any) => {
     const res = await updateOffice(office.documentId, { isActive: !office.isActive });
-    if (res.error) alert(res.error);
+    if ('error' in res && res.error) alert(res.error);
     else router.refresh();
   };
 
   const handleDelete = async (office: any) => {
     if (!confirm(`"${office.name}" ofisini silmek istediğinize emin misiniz?`)) return;
     const res = await deleteOffice(office.documentId);
-    if (res.error) alert(res.error);
+    if ('error' in res && res.error) alert(res.error);
     else router.refresh();
   };
 
@@ -96,6 +99,18 @@ export default function OfficeManagementClient({ offices: initialOffices }: { of
               <label className="block text-xs text-gray-400 mb-1">Telefon *</label>
               <input name="phone" required defaultValue={editingOffice?.phone || ''} className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2 text-white text-sm outline-none focus:border-[#ff5a00]" placeholder="0212 --- -- --" />
             </div>
+            <div className="md:col-span-2">
+              <label className="block text-xs text-gray-400 mb-1">Konum / Google Maps Linki</label>
+              <textarea name="location" defaultValue={editingOffice?.location || ''} rows={2} className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2 text-white text-sm outline-none focus:border-[#ff5a00]" placeholder="Google Maps embed URL veya konum bilgisi..." />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-400 mb-1">Açılış Saati</label>
+              <input name="openingTime" type="time" defaultValue={editingOffice?.openingTime || '09:00'} className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2 text-white text-sm outline-none focus:border-[#ff5a00] [color-scheme:dark]" />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-400 mb-1">Kapanış Saati</label>
+              <input name="closingTime" type="time" defaultValue={editingOffice?.closingTime || '18:00'} className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2 text-white text-sm outline-none focus:border-[#ff5a00] [color-scheme:dark]" />
+            </div>
           </div>
 
           <div className="flex gap-4 pt-2">
@@ -128,6 +143,7 @@ export default function OfficeManagementClient({ offices: initialOffices }: { of
                 <th className="text-left p-4">Ofis / Şehir</th>
                 <th className="text-left p-4">Adres</th>
                 <th className="text-left p-4">Telefon</th>
+                <th className="text-left p-4">Çalışma Saatleri</th>
                 <th className="text-left p-4 text-center">Durum</th>
                 <th className="text-right p-4">İşlemler</th>
               </tr>
@@ -141,6 +157,15 @@ export default function OfficeManagementClient({ offices: initialOffices }: { of
                   </td>
                   <td className="p-4 text-gray-400 text-xs max-w-xs "><p className="truncate" title={office.address}>{office.address}</p></td>
                   <td className="p-4 text-gray-300 text-sm whitespace-nowrap">{office.phone}</td>
+                  <td className="p-4 text-gray-300 text-xs whitespace-nowrap">
+                    {office.openingTime && office.closingTime ? (
+                      <span className="inline-flex items-center gap-1 bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 rounded-full text-[10px] font-semibold">
+                        🕐 {office.openingTime} - {office.closingTime}
+                      </span>
+                    ) : (
+                      <span className="text-gray-600">—</span>
+                    )}
+                  </td>
                   <td className="p-4 text-center">
                     <span className={`px-2 py-1 rounded-full text-[10px] font-semibold border ${office.isActive !== false ? 'bg-green-500/10 text-green-400 border-green-500/30' : 'bg-red-500/10 text-red-400 border-red-500/30'}`}>
                       {office.isActive !== false ? 'Aktif' : 'Pasif'}
@@ -174,7 +199,7 @@ export default function OfficeManagementClient({ offices: initialOffices }: { of
                 </tr>
               ))}
               {initialOffices.length === 0 && (
-                <tr><td colSpan={5} className="p-12 text-center text-gray-600">Henüz ofis eklenmemiş.</td></tr>
+                <tr><td colSpan={6} className="p-12 text-center text-gray-600">Henüz ofis eklenmemiş.</td></tr>
               )}
             </tbody>
           </table>

@@ -51,15 +51,13 @@ export async function GET(req: NextRequest) {
         const updateRes = await fetch(`${internalApiUrl}/api/user-extension/update-profile`, {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${strapiJwt}`
           },
           body: JSON.stringify({
-            userId: strapiUser.id,
-            documentId: strapiUser.documentId,
             username: name,
             firstName: firstName,
-            lastName: lastName,
-            secret: 'visionarc-secret-google-123'
+            lastName: lastName
           })
         });
 
@@ -83,7 +81,11 @@ export async function GET(req: NextRequest) {
       maxAge: 60 * 60 * 24 * 7 // 1 week
     });
 
-    // 3. Başarıyla Kiralama ekranına yönlendir
+    // 3. Telefon numarası kontrolü (Eğer yoksa tamamlama sayfasına)
+    if (!strapiUser.phoneNumber && !data.user.phoneNumber) {
+       return NextResponse.redirect(new URL('/complete-phone', req.url));
+    }
+    
     return NextResponse.redirect(new URL('/rentacar', req.url));
 
   } catch (err: any) {

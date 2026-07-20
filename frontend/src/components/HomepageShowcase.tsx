@@ -26,7 +26,7 @@ function MediaEmbed({ item }: { item: any }) {
   // YouTube
   if (item.mediaType === 'youtube') {
     const videoId = extractYouTubeId(item.mediaUrl);
-    if (!videoId) return <div className="aspect-video bg-black/60 flex items-center justify-center text-gray-500">Geçersiz YouTube URL</div>;
+    if (!videoId) return <div className="aspect-video bg-[#0a0a0a] flex items-center justify-center text-gray-600">Geçersiz YouTube URL</div>;
     
     if (!playing) {
       return (
@@ -37,9 +37,9 @@ function MediaEmbed({ item }: { item: any }) {
             className="w-full h-full object-cover"
             loading="lazy"
           />
-          <div className="absolute inset-0 bg-black/30 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-            <div className="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center shadow-2xl group-hover:scale-110 transition-transform">
-              <svg className="w-7 h-7 text-white ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+          <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors duration-500 flex items-center justify-center">
+            <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center shadow-2xl shadow-primary/20 group-hover:scale-110 transition-transform duration-300">
+              <svg className="w-7 h-7 text-black ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
             </div>
           </div>
         </div>
@@ -106,7 +106,7 @@ export default function HomepageShowcase({ media }: { media: any[] }) {
   if (!media || media.length === 0) return null;
 
   return (
-    <section className="py-24 px-6 relative z-10">
+    <section className="py-28 px-6 relative z-10">
       <div className="max-w-7xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -114,8 +114,12 @@ export default function HomepageShowcase({ media }: { media: any[] }) {
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <h2 className="text-4xl md:text-5xl font-bold mb-4">Medya Vitrini</h2>
-          <p className="text-gray-400 max-w-2xl mx-auto text-lg">
+          <span className="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-full px-4 py-1.5 text-xs font-bold text-primary mb-6">
+            <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+            Medya
+          </span>
+          <h2 className="text-4xl md:text-5xl font-[family-name:var(--font-outfit)] font-black tracking-tight mb-4">Medya Vitrini</h2>
+          <p className="text-gray-500 max-w-2xl mx-auto text-lg">
             İşlerimizden seçmeler ve sosyal medya içeriklerimiz.
           </p>
         </motion.div>
@@ -128,10 +132,11 @@ export default function HomepageShowcase({ media }: { media: any[] }) {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: index * 0.1, duration: 0.5 }}
-              className="glass rounded-2xl border border-white/5 overflow-hidden group hover:border-white/10 transition-all"
+              whileHover={{ y: -6 }}
+              className="glass-card rounded-2xl overflow-hidden group"
             >
               {/* Medya Embed */}
-              <div className="overflow-hidden rounded-t-2xl">
+              <div className="overflow-hidden">
                 <MediaEmbed item={item} />
               </div>
 
@@ -140,10 +145,10 @@ export default function HomepageShowcase({ media }: { media: any[] }) {
                 <div className="p-5">
                   <div className="flex items-center gap-2 mb-2">
                     <span className="text-sm">{typeIcons[item.mediaType] || '🎬'}</span>
-                    {item.title && <h3 className="font-bold text-sm">{item.title}</h3>}
+                    {item.title && <h3 className="font-[family-name:var(--font-outfit)] font-bold text-sm text-white group-hover:text-primary transition-colors duration-300">{item.title}</h3>}
                   </div>
                   {item.description && (
-                    <p className="text-xs text-gray-400 leading-relaxed">{item.description}</p>
+                    <p className="text-xs text-gray-500 leading-relaxed">{item.description}</p>
                   )}
                 </div>
               )}

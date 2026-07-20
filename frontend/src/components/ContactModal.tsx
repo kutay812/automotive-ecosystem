@@ -27,76 +27,75 @@ export default function ContactModal({ isOpen, onClose }: { isOpen: boolean, onC
   return (
     <AnimatePresence>
       {isOpen && (
-        <>
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center px-4">
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100]"
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
           />
           <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90%] max-w-md glass border border-white/10 rounded-2xl p-8 z-[101] shadow-2xl"
+            className="relative w-full max-w-md bg-surface-container-lowest border border-outline-variant rounded-xl p-8 z-10 shadow-[0_4px_40px_rgba(0,0,0,0.15)] flex flex-col max-h-[90vh] overflow-y-auto custom-scrollbar"
           >
-            <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-white pb-2 pl-2">
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
+            <button onClick={onClose} className="absolute top-4 right-4 text-on-surface-variant hover:text-primary transition-colors duration-300">
+              <span className="material-symbols-outlined">close</span>
             </button>
 
-            <h2 className="text-2xl font-bold mb-2">İletişime Geçin</h2>
-            <p className="text-sm text-gray-400 mb-6">Projenizi hayata geçirmek için buradayız. Bilgilerinizi bırakın, sizi arayalım.</p>
+            <h2 className="text-headline-md text-primary mb-2">İletişime Geçin</h2>
+            <p className="text-body-md text-on-surface-variant mb-6">Projenizi hayata geçirmek için buradayız. Bilgilerinizi bırakın, sizi arayalım.</p>
 
             {status === 'success' ? (
-              <div className="bg-green-500/20 text-green-300 p-4 rounded-xl border border-green-500/30 text-center">
-                Mesajınız başarıyla alındı. En kısa sürede dönüş yapacağız! 🚀
+              <div className="bg-green-50 text-green-700 p-5 rounded-lg border border-green-200 text-center">
+                <span className="material-symbols-outlined text-[32px] mb-2">check_circle</span>
+                <p>Mesajınız başarıyla alındı. En kısa sürede dönüş yapacağız!</p>
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="flex flex-col gap-4">
                 <div>
                   <input required
                     type="text" placeholder="Adınız Soyadınız"
-                    className="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-primary/50 transition-colors"
+                    className="w-full rounded-lg"
                     value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})}
                   />
                 </div>
                 <div>
                   <input required
                     type="email" placeholder="E-posta Adresiniz"
-                    className="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-primary/50 transition-colors"
+                    className="w-full rounded-lg"
                     value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})}
                   />
                 </div>
                 <div>
                   <input
                     type="tel" placeholder="Telefon (İsteğe bağlı)"
-                    className="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-primary/50 transition-colors"
+                    className="w-full rounded-lg"
                     value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})}
                   />
                 </div>
                 <div>
                   <textarea required rows={3} placeholder="Bize biraz projenizden bahsedin..."
-                    className="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-primary/50 transition-colors resize-none"
+                    className="w-full rounded-lg resize-none"
                     value={formData.message} onChange={e => setFormData({...formData, message: e.target.value})}
                   ></textarea>
                 </div>
                 
-                {status === 'error' && <span className="text-red-400 text-sm">Bir hata oluştu, lütfen Strapi API izinlerini kontrol edin.</span>}
+                {status === 'error' && <span className="text-error text-caption">Bir hata oluştu, lütfen daha sonra tekrar deneyin.</span>}
                 
                 <button 
                   type="submit" 
                   disabled={status === 'loading'}
-                  className="w-full bg-primary text-black font-semibold py-3 rounded-lg hover:bg-primary/90 transition-colors mt-2"
+                  className="w-full btn-cta py-3.5 rounded-lg mt-2 disabled:opacity-50"
                 >
                   {status === 'loading' ? 'Gönderiliyor...' : 'Mesajı Gönder'}
                 </button>
               </form>
             )}
           </motion.div>
-        </>
+        </div>
       )}
     </AnimatePresence>
   );

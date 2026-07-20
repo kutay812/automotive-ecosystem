@@ -36,7 +36,7 @@ export default function MediaManagementClient({ media: initialMedia }: { media: 
     : filter === 'videos'
     ? initialMedia.filter(f => f.mime?.startsWith('video/'))
     : filter === 'unlinked'
-    ? initialMedia.filter(f => !f.relatedType)
+    ? initialMedia.filter(f => (f.relatedCount ?? 0) === 0)
     : initialMedia;
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -47,7 +47,7 @@ export default function MediaManagementClient({ media: initialMedia }: { media: 
     formData.append('file', file);
     const res = await uploadMedia(formData);
     setUploading(false);
-    if (res.error) alert(res.error);
+    if ('error' in res && res.error) alert(res.error);
     else router.refresh();
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
@@ -57,7 +57,7 @@ export default function MediaManagementClient({ media: initialMedia }: { media: 
     setDeleteLoading(fileId);
     const res = await deleteMedia(fileId);
     setDeleteLoading(null);
-    if (res.error) alert(res.error);
+    if ('error' in res && res.error) alert(res.error);
     else router.refresh();
   };
 
@@ -65,7 +65,7 @@ export default function MediaManagementClient({ media: initialMedia }: { media: 
     total: initialMedia.length,
     images: initialMedia.filter(f => f.mime?.startsWith('image/')).length,
     videos: initialMedia.filter(f => f.mime?.startsWith('video/')).length,
-    unlinked: initialMedia.filter(f => !f.relatedType).length,
+    unlinked: initialMedia.filter(f => (f.relatedCount ?? 0) === 0).length,
   };
 
   const filters = [
@@ -114,7 +114,7 @@ export default function MediaManagementClient({ media: initialMedia }: { media: 
       {/* Grid */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
         {filteredMedia.map((file: any) => (
-          <div key={file.id} className="bg-white/[0.03] border border-white/5 rounded-2xl overflow-hidden hover:border-white/10 transition-all group">
+          <div key={file.documentId || file.id} className="bg-white/[0.03] border border-white/5 rounded-2xl overflow-hidden hover:border-white/10 transition-all group">
             {/* Önizleme */}
             <div className="aspect-square bg-black/40 flex items-center justify-center overflow-hidden">
               {file.mime?.startsWith('image/') ? (
@@ -141,7 +141,10 @@ export default function MediaManagementClient({ media: initialMedia }: { media: 
                 </div>
               </div>
               {file.relatedType && (
-                <p className="text-[10px] text-gray-500">{getRelatedLabel(file.relatedType)}</p>
+                <p className="text-[10px] text-gray-500">
+                  {getRelatedLabel(file.relatedType)}
+                  {(file.relatedCount ?? 0) > 1 ? ` +${file.relatedCount - 1} bağlantı` : ''}
+                </p>
               )}
               <button
                 onClick={() => handleDelete(file.id, file.name)}

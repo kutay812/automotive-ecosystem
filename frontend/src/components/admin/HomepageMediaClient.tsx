@@ -77,9 +77,9 @@ export default function HomepageMediaClient({ media: initialMedia }: { media: an
     const res = await uploadMedia(fd);
     setUploading(false);
     
-    if (res.error) {
+    if ('error' in res && res.error) {
       alert(res.error);
-    } else if (res.data?.url) {
+    } else if ('data' in res && res.data?.url) {
       setFormData(prev => ({ ...prev, mediaUrl: res.data.url }));
     }
   };
@@ -95,7 +95,7 @@ export default function HomepageMediaClient({ media: initialMedia }: { media: an
       res = await createHomepageMedia(formData);
     }
     setSaving(false);
-    if (res.error) alert(res.error);
+    if ('error' in res && res.error) alert(res.error);
     else { setShowForm(false); router.refresh(); }
   };
 
@@ -104,7 +104,7 @@ export default function HomepageMediaClient({ media: initialMedia }: { media: an
     setDeleteLoading(item.id);
     const res = await deleteHomepageMedia(item.id);
     setDeleteLoading(null);
-    if (res.error) alert(res.error);
+    if ('error' in res && res.error) alert(res.error);
     else router.refresh();
   };
 
@@ -112,7 +112,7 @@ export default function HomepageMediaClient({ media: initialMedia }: { media: an
     setSaving(true);
     const res = await updateHomepageMedia(item.id, { isActive: !item.isActive });
     setSaving(false);
-    if (res.error) alert(res.error);
+    if ('error' in res && res.error) alert(res.error);
     else router.refresh();
   };
 

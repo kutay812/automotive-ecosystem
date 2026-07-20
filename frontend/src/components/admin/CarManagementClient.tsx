@@ -5,7 +5,7 @@ import { createCar, updateCar, deleteCar, uploadMedia } from '@/app/actions/admi
 import { useRouter } from 'next/navigation';
 import { getMediaUrl } from '@/lib/api';
 
-export default function CarManagementClient({ cars: initialCars }: { cars: any[] }) {
+export default function CarManagementClient({ cars: initialCars, offices = [] }: { cars: any[]; offices: any[] }) {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
@@ -26,9 +26,9 @@ export default function CarManagementClient({ cars: initialCars }: { cars: any[]
     const res = await uploadMedia(fd);
     setUploading(false);
     
-    if (res.error) {
+    if ('error' in res && res.error) {
       alert(res.error);
-    } else if (res.data?.url) {
+    } else if ('data' in res && res.data?.url) {
       setCarImageUrl(res.data.url);
     }
   };
@@ -51,7 +51,8 @@ export default function CarManagementClient({ cars: initialCars }: { cars: any[]
         fuelType: formData.get('fuelType'),
         passengerCount: Number(formData.get('passengerCount')),
         luggageCount: Number(formData.get('luggageCount')),
-        imageUrl: imageUrl
+        imageUrl: imageUrl,
+        currentOfficeId: formData.get('currentOfficeId') || null,
       };
       res = await updateCar(editingCar.documentId, updateData);
     } else {
@@ -61,7 +62,7 @@ export default function CarManagementClient({ cars: initialCars }: { cars: any[]
     }
 
     setLoading(false);
-    if (res.error) {
+    if ('error' in res && res.error) {
       alert(res.error);
     } else {
       setShowForm(false);
@@ -80,14 +81,14 @@ export default function CarManagementClient({ cars: initialCars }: { cars: any[]
 
   const handleToggleAvailability = async (car: any) => {
     const res = await updateCar(car.documentId, { isAvailable: !car.isAvailable });
-    if (res.error) alert(res.error);
+    if ('error' in res && res.error) alert(res.error);
     else router.refresh();
   };
 
   const handleDelete = async (car: any) => {
     if (!confirm(`"${car.brand} ${car.model}" aracını silmek istediğinize emin misiniz?`)) return;
     const res = await deleteCar(car.documentId);
-    if (res.error) alert(res.error);
+    if ('error' in res && res.error) alert(res.error);
     else router.refresh();
   };
 
@@ -171,6 +172,15 @@ export default function CarManagementClient({ cars: initialCars }: { cars: any[]
               <label className="block text-xs text-gray-400 mb-1">Bagaj Sayısı</label>
               <input name="luggageCount" type="number" defaultValue={editingCar?.luggageCount || '2'} className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-white text-sm outline-none focus:border-[#ff5a00]" />
             </div>
+            <div className="col-span-2 lg:col-span-4">
+              <label className="block text-xs text-gray-400 mb-1">🏢 Mevcut Ofis (Aracın Şu Anki Konumu)</label>
+              <select name="currentOfficeId" defaultValue={editingCar?.currentOfficeId || ''} className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-white text-sm outline-none focus:border-[#ff5a00]">
+                <option value="">— Ofis Atanmamış —</option>
+                {offices.map((o: any) => (
+                  <option key={o.documentId || o.id} value={o.name}>{o.name} — {o.city}</option>
+                ))}
+              </select>
+            </div>
           </div>
           
           <div className="flex flex-col gap-2">
@@ -236,7 +246,8 @@ export default function CarManagementClient({ cars: initialCars }: { cars: any[]
                 <th className="text-left p-4">Model</th>
                 <th className="text-left p-4">Yıl</th>
                 <th className="text-left p-4">Günlük Fiyat</th>
-                <th className="text-left p-4 whitespace-nowrap">Vites / Yakıt</th>
+                <th className="text-left p-4">Vites / Yakıt</th>
+                <th className="text-left p-4">Ofis</th>
                 <th className="text-left p-4">Durum</th>
                 <th className="text-right p-4">İşlemler</th>
               </tr>
@@ -259,6 +270,12 @@ export default function CarManagementClient({ cars: initialCars }: { cars: any[]
                   <td className="p-4 text-[#ff5a00] font-bold">₺{parseFloat(car.pricePerDay || 0).toLocaleString('tr-TR')}</td>
                   <td className="p-4 text-gray-400 text-xs">
                     {car.transmission} / {car.fuelType}
+                  </td>
+                  <td className="p-4">
+                    {car.currentOfficeId
+                      ? <span className="text-xs text-blue-300 bg-blue-500/10 border border-blue-500/20 px-2 py-1 rounded-lg">🏢 {car.currentOfficeId}</span>
+                      : <span className="text-xs text-gray-600">—</span>
+                    }
                   </td>
                   <td className="p-4">
                     <span className={`px-2 py-1 rounded-full text-[10px] font-semibold border ${car.isAvailable !== false ? 'bg-green-500/10 text-green-400 border-green-500/30' : 'bg-red-500/10 text-red-400 border-red-500/30'}`}>

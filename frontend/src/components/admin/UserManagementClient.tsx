@@ -25,7 +25,7 @@ export default function UserManagementClient({ users: initialUsers, roles }: { u
     setActionLoading(user.documentId);
     const res = await updateUser(user.documentId, { blocked: !user.blocked });
     setActionLoading(null);
-    if (res.error) alert(res.error);
+    if ('error' in res && res.error) alert(res.error);
     else router.refresh();
   };
 
@@ -33,7 +33,7 @@ export default function UserManagementClient({ users: initialUsers, roles }: { u
     setActionLoading(user.documentId);
     const res = await updateUser(user.documentId, { roleId });
     setActionLoading(null);
-    if (res.error) alert(res.error);
+    if ('error' in res && res.error) alert(res.error);
     else router.refresh();
   };
 
@@ -42,7 +42,7 @@ export default function UserManagementClient({ users: initialUsers, roles }: { u
     setActionLoading(user.documentId);
     const res = await deleteUser(user.documentId);
     setActionLoading(null);
-    if (res.error) alert(res.error);
+    if ('error' in res && res.error) alert(res.error);
     else router.refresh();
   };
 

@@ -1,14 +1,44 @@
 import Hero from '@/components/Hero';
 import Services from '@/components/Services';
-import HomepageShowcase from '@/components/HomepageShowcase';
+import HomepageProjects from '@/components/HomepageProjects';
+import { HomepageOffices } from '@/components/OfficesShowcase';
+import HomepageShop from '@/components/HomepageShop';
+import SupportSection from '@/components/SupportSection';
 
 const INTERNAL_API_URL = process.env.INTERNAL_API_URL || 'http://backend:1337';
+if (typeof window === 'undefined') {
+  console.log('🌐 Frontend: Backend API adresi ->', INTERNAL_API_URL);
+}
 
-async function getHomepageMedia() {
+async function getActiveOffices() {
   try {
-    const res = await fetch(`${INTERNAL_API_URL}/api/homepage-media?active=true`, {
-      cache: 'no-store',
-    });
+    const res = await fetch(
+      `${INTERNAL_API_URL}/api/offices?filters[isActive][$eq]=true`,
+      { cache: 'no-store' }
+    );
+    console.log(`📡 getActiveOffices response: ${res.status} ${res.statusText}`);
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data?.data || [];
+  } catch {
+    return [];
+  }
+}
+
+async function getActiveShopItems() {
+  try {
+    const res = await fetch(`${INTERNAL_API_URL}/api/shop/items`, { cache: 'no-store' });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data?.data || [];
+  } catch {
+    return [];
+  }
+}
+
+async function getActiveProjects() {
+  try {
+    const res = await fetch(`${INTERNAL_API_URL}/api/projects?active=true`, { cache: 'no-store' });
     if (!res.ok) return [];
     const data = await res.json();
     return data?.data || [];
@@ -18,13 +48,35 @@ async function getHomepageMedia() {
 }
 
 export default async function Home() {
+  const [offices, shopItems, projects] = await Promise.all([
+    getActiveOffices(),
+    getActiveShopItems(),
+    getActiveProjects(),
+  ]);
+
   return (
-    <main className="min-h-screen bg-transparent relative">
-      {/* Özel Ana Sayfa Işıklandırması (Glow) */}
-      <div className="absolute top-[-10%] left-1/2 -translate-x-1/2 w-[80%] max-w-4xl h-[400px] bg-primary/20 blur-[150px] rounded-full pointer-events-none z-[-1]" />
-      
+    <main className="min-h-screen bg-background relative">
       <Hero />
+      
+      <div className="section-divider max-w-[1280px] mx-auto" />
+      
       <Services />
+      
+      <div className="section-divider max-w-[1280px] mx-auto" />
+
+      <HomepageProjects projects={projects} />
+      
+      {projects.length > 0 && <div className="section-divider max-w-[1280px] mx-auto" />}
+      
+      <HomepageShop items={shopItems} />
+      
+      <div className="section-divider max-w-[1280px] mx-auto" />
+      
+      <HomepageOffices offices={offices} />
+      
+      <div className="section-divider max-w-[1280px] mx-auto" />
+      
+      <SupportSection />
     </main>
   );
 }

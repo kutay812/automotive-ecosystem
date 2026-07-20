@@ -63,7 +63,7 @@ export default function AdminDashboardClient({ stats, recentRentals: initialRent
     <div className="space-y-8">
       <div>
         <h1 className="text-3xl font-black tracking-tight">Gösterge Paneli</h1>
-        <p className="text-gray-500 text-sm mt-1">VisionArc Kiralama Yönetim Merkezi</p>
+        <p className="text-gray-500 text-sm mt-1">Example Kiralama Yönetim Merkezi</p>
       </div>
 
       {/* İstatistik Kartları */}

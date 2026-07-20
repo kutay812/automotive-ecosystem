@@ -1,25 +1,23 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter } from "next/font/google";
 import Script from "next/script";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { getUser } from "@/lib/session";
+import { getAdminUser } from "@/lib/admin-session";
 import { headers } from "next/headers";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+  display: "swap",
+  weight: ["400", "500", "600", "700", "800", "900"],
 });
 
 export const metadata: Metadata = {
-  title: "VisionArc Ecosystem",
-  description: "VisionArc'tan Anti-Gravity Web Deneyimi",
+  title: "Example - Premium Otomotiv Deneyimi",
+  description: "Example - Premium araç kiralama, yedek parça mağazası ve profesyonel otomotiv medya prodüksiyonu",
 };
 
 export default async function RootLayout({
@@ -28,44 +26,38 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const user = await getUser();
+  const admin = await getAdminUser();
   const headersList = await headers();
   const pathname = headersList.get("x-pathname") || "";
   
-  const isAdminPage = pathname.startsWith("/yonetim");
+  const isAdminPage = pathname.startsWith("/admin");
 
   return (
     <html
       lang="tr"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      suppressHydrationWarning
+      className={`${inter.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">
-        {/* Google Tag Manager (noscript) */}
-        <noscript>
-          <iframe 
-            src="https://www.googletagmanager.com/ns.html?id=GTM-XXXXXXX" 
-            height="0" 
-            width="0" 
-            style={{ display: "none", visibility: "hidden" }}
-          />
-        </noscript>
+      <head>
+        <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+      </head>
+
+      <body suppressHydrationWarning className={`min-h-full flex flex-col font-[family-name:var(--font-inter)] ${isAdminPage ? 'admin-panel' : ''}`}>
+        {/* DEMO MODE BANNER */}
+        <div className="bg-secondary text-on-secondary text-center py-2 px-4 text-sm font-bold z-50 sticky top-0 uppercase tracking-widest shadow-md">
+          DEMO MODE - No real transactions are processed. Data is for demonstration only.
+        </div>
+
         
-        {!isAdminPage && <Navbar user={user} />}
+        {!isAdminPage && <Navbar user={user} adminRole={admin?.role} />}
         
-        <div className={`flex-grow ${!isAdminPage ? 'pt-16' : ''}`}>
+        <div className={`flex-grow ${!isAdminPage ? '' : ''}`}>
           {children}
         </div>
         
         {!isAdminPage && <Footer />}
         
-        <Script id="gtm-script" strategy="afterInteractive">
-          {`
-            (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-            new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-            j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-            'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-            })(window,document,'script','dataLayer','GTM-XXXXXXX');
-          `}
-        </Script>
+
       </body>
     </html>
   );

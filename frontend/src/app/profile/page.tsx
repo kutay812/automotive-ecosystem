@@ -1,7 +1,21 @@
-import { getUser } from '@/lib/session';
+import { getUser, getSession } from '@/lib/session';
 import { redirect } from 'next/navigation';
-import { getMyRentals } from '@/app/actions/rental';
-import ProfileRentals from '@/components/ProfileRentals';
+import ProfileDashboard from '@/components/ProfileDashboard';
+
+const INTERNAL_API_URL = process.env.INTERNAL_API_URL || 'http://backend:1337';
+
+async function getProfileDetails(token: string) {
+  try {
+    const res = await fetch(`${INTERNAL_API_URL}/api/user/profile-details`, {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: 'no-store',
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
 
 export default async function ProfilePage() {
   const user = await getUser();
@@ -9,17 +23,18 @@ export default async function ProfilePage() {
     redirect('/login');
   }
 
-  const rentals = await getMyRentals(user.documentId || user.id);
+  const token = await getSession();
+  const profileData = token ? await getProfileDetails(token) : null;
+
+  if (!profileData) {
+    redirect('/login');
+  }
 
   return (
-    <main className="min-h-screen pt-24 px-6 relative z-10 w-full max-w-7xl mx-auto pb-24">
-      <div className="mb-12 border-b border-white/10 pb-6">
-        <h1 className="text-4xl md:text-5xl font-bold mb-2">Profilim</h1>
-        <p className="text-xl text-gray-400">Hoş geldiniz, {user.firstName} {user.lastName}</p>
-        <p className="text-sm text-gray-500 mt-1">{user.email}</p>
-      </div>
-
-      <ProfileRentals rentals={rentals} />
+    <main className="min-h-screen pt-28 px-6 relative z-10 w-full max-w-7xl mx-auto pb-24">
+      {/* Ambient glow */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[60%] h-[400px] bg-primary/8 blur-[180px] rounded-full pointer-events-none z-0" />
+      <ProfileDashboard data={profileData} />
     </main>
   );
 }

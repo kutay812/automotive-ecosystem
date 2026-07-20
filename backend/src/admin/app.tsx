@@ -11,7 +11,7 @@ const trTranslations = {
   "global.settings": "Ayarlar",
   "global.plugins": "Eklentiler",
   "global.marketplace": "Pazar Yeri",
-  "app.components.LeftMenu.navbrand.title": "VisionArc Yönetim",
+  "app.components.LeftMenu.navbrand.title": "Example Yönetim",
   "app.components.LeftMenu.navbrand.workplace": "Çalışma Alanı",
   "content-manager.components.LeftMenu.collection-types": "Koleksiyon Tipleri",
   "content-manager.components.LeftMenu.single-types": "Tekil Tipler",
@@ -19,7 +19,7 @@ const trTranslations = {
   "content-type-builder.plugin.name": "İçerik Tipi Oluşturucu",
   "Settings.profile.form.section.experience.interfaceLanguage": "Arayüz Dili",
   "Settings.profile.form.section.experience.mode.label": "Arayüz Teması",
-  "app.components.HomePage.welcome.Block.title": "VisionArc Sistemine Hoş Geldiniz!",
+  "app.components.HomePage.welcome.Block.title": "Example Sistemine Hoş Geldiniz!",
   "app.components.HomePage.welcome.Block.content": "Tüm içerikleri, araçları ve projeleri buradan yönetebilirsiniz.",
   "Settings.profile.form.section.experience.mode.hint": "Arayüz rengini tercihinize göre değiştirebilirsiniz.",
   "global.content-manager": "İçerik Yönetimi",
@@ -32,7 +32,7 @@ const trTranslations = {
   "content-manager.containers.Edit.publish": "Yayına Al",
   "content-manager.containers.Edit.unpublish": "Yayından Kaldır",
   "content-manager.containers.Edit.save": "Kaydet",
-  "app.components.LeftMenu.navbrand.title": "VisionArc Admin",
+  "app.components.LeftMenu.navbrand.title": "Example Admin",
   "app.components.LeftMenu.navbrand.workplace": "Kurumsal Yönetim",
 };
 
@@ -46,7 +46,7 @@ export default {
     notifications: { release: false },
   },
   bootstrap(app: StrapiApp) {
-    // VisionArc Özel CSS Enjeksiyonu
+    // Example Özel CSS Enjeksiyonu
     const style = document.createElement('style');
     style.innerHTML = `
       /* Admin Badge Renklendirme */
@@ -102,6 +102,6 @@ export default {
     `;
     document.head.appendChild(style);
     
-    console.log("VisionArc Admin Experience initialized.");
+    console.log("Example Admin Experience initialized.");
   },
 };

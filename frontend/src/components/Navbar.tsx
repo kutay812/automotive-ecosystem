@@ -1,140 +1,135 @@
 'use client';
 
-import { motion, useScroll, useTransform } from 'framer-motion';
 import Link from 'next/link';
 import { useState } from 'react';
 import { logoutUser } from '@/app/actions/auth';
 import ContactModal from './ContactModal';
 
-export default function Navbar({ user }: { user?: any }) {
-  const { scrollY } = useScroll();
-  const background = useTransform(
-    scrollY,
-    [0, 50],
-    ['rgba(2, 2, 2, 0)', 'rgba(2, 2, 2, 0.85)']
-  );
-  const backdropFilter = useTransform(
-    scrollY,
-    [0, 50],
-    ['blur(0px)', 'blur(12px)']
-  );
+const ADMIN_ROLES = ['superadmin', 'admin', 'editor'];
 
+export default function Navbar({ user, adminRole }: { user?: any; adminRole?: string }) {
   const [isOpen, setIsOpen] = useState(false);
   const [isContactOpen, setIsContactOpen] = useState(false);
 
+  const showAdminLink = adminRole && ADMIN_ROLES.includes(adminRole);
+
   return (
-    <motion.header
-      style={{ background, backdropFilter }}
-      className="fixed top-0 w-full z-50 transition-colors duration-300 border-b border-transparent"
-    >
-      <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-        <Link href="/">
-          <motion.div
-            whileHover={{ scale: 1.05 }}
-            className="text-2xl font-bold tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-primary to-white"
-          >
-            VISIONARC
-          </motion.div>
-        </Link>
+    <>
+      <nav className="w-full h-16 flex items-center bg-background border-b border-outline-variant sticky top-[40px] z-50">
+        <div className="flex justify-between items-center px-6 w-full max-w-[1280px] mx-auto">
+          {/* Logo */}
+          <Link href="/" className="text-display-lg-mobile font-extrabold tracking-tighter text-primary hover:opacity-80 transition-opacity">
+            EXAMPLE
+          </Link>
 
-        {/* Desktop Nav */}
-        <nav className="hidden md:flex gap-8 items-center">
-          <NavLink href="/">Ana sayfa</NavLink>
-          <NavLink href="/rentacar">Araç Kiralama</NavLink>
-          <NavLink href="/production">Medya</NavLink>
+          {/* Desktop Nav */}
+          <div className="hidden md:flex gap-8 items-center text-body-md">
+            <Link href="/rentacar" className="text-on-surface-variant hover:text-secondary transition-colors duration-200">
+              Kiralama
+            </Link>
+            <Link href="/alisveris" className="text-on-surface-variant hover:text-secondary transition-colors duration-200">
+              Mağaza
+            </Link>
+            <Link href="/production" className="text-on-surface-variant hover:text-secondary transition-colors duration-200">
+              Medya
+            </Link>
+          </div>
 
-          {user ? (
-            <div className="flex gap-4 items-center pl-6 border-l border-white/20 ml-2">
-              <Link href="/profile" className="text-sm font-bold text-gray-200 hover:text-primary transition-colors cursor-pointer">
-                Merhaba, {user.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : user.username}
-              </Link>
-              <button
-                onClick={() => logoutUser()}
-                className="text-xs px-3 py-1.5 bg-white/10 hover:bg-red-500/80 text-white rounded-md transition-colors"
-              >
-                Çıkış Yap
-              </button>
-            </div>
-          ) : (
-            <div className="flex gap-4 items-center pl-6 border-l border-white/20 ml-2">
-              <Link href="/login" className="text-sm font-bold text-white hover:text-primary transition-colors">
-                Giriş Yap
-              </Link>
-            </div>
-          )}
-
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setIsContactOpen(true)}
-            className="px-5 py-2.5 bg-primary/10 text-primary border border-primary/20 rounded-full hover:bg-primary/20 transition-all font-medium"
-          >
-            İletişim
-          </motion.button>
-        </nav>
-
-        {/* Mobile Toggle */}
-        <button
-          className="md:hidden text-white"
-          onClick={() => setIsOpen(!isOpen)}
-        >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            {isOpen ? (
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          {/* Right Actions */}
+          <div className="flex gap-4 items-center text-primary">
+            {user ? (
+              <>
+                <Link href="/profile" className="hover:text-secondary transition-colors duration-200" title="Profilim">
+                  <span className="material-symbols-outlined">account_circle</span>
+                </Link>
+                {showAdminLink && (
+                  <Link
+                    href="/admin"
+                    className="text-label-md px-3 py-1.5 bg-secondary text-on-secondary rounded hover:bg-secondary-container transition-all duration-300"
+                  >
+                    🛡️ Yönetim
+                  </Link>
+                )}
+                <form action={logoutUser}>
+                  <button
+                    type="submit"
+                    className="hover:text-secondary transition-colors duration-200"
+                    title="Çıkış Yap"
+                  >
+                    <span className="material-symbols-outlined">logout</span>
+                  </button>
+                </form>
+              </>
             ) : (
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              <>
+                <button
+                  onClick={() => setIsContactOpen(true)}
+                  className="hover:text-secondary transition-colors duration-200"
+                  title="İletişim"
+                >
+                  <span className="material-symbols-outlined">mail</span>
+                </button>
+                <Link href="/login" className="hover:text-secondary transition-colors duration-200" title="Giriş Yap">
+                  <span className="material-symbols-outlined">account_circle</span>
+                </Link>
+              </>
             )}
-          </svg>
-        </button>
-      </div>
+
+            {/* Mobile Menu Toggle */}
+            <button
+              className="md:hidden hover:text-secondary transition-colors duration-200"
+              onClick={() => setIsOpen(!isOpen)}
+            >
+              <span className="material-symbols-outlined">
+                {isOpen ? 'close' : 'menu'}
+              </span>
+            </button>
+          </div>
+        </div>
+      </nav>
 
       {/* Mobile Menu */}
       {isOpen && (
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="md:hidden absolute top-full left-0 w-full glass p-6 flex flex-col gap-4 border-t border-white/10"
-        >
-          <Link href="/" onClick={() => setIsOpen(false)} className="text-white hover:text-primary transition-colors">Kurumsal</Link>
-          <Link href="/rentacar" onClick={() => setIsOpen(false)} className="text-white hover:text-primary transition-colors">Araç Kiralama</Link>
-          <Link href="/production" onClick={() => setIsOpen(false)} className="text-white hover:text-primary transition-colors">Medya</Link>
-
-          <div className="border-t border-white/10 my-1 pt-4">
-            {user ? (
-              <div className="flex justify-between items-center w-full">
-                <Link href="/profile" onClick={() => setIsOpen(false)} className="text-sm font-bold text-white hover:text-primary transition-colors">
-                  {user.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : user.username}
-                </Link>
-                <button onClick={() => { setIsOpen(false); logoutUser() }} className="text-red-400 text-sm font-bold">Çıkış Yap</button>
-              </div>
-            ) : (
-              <Link href="/login" onClick={() => setIsOpen(false)} className="text-white hover:text-primary transition-colors font-bold block">Giriş Yap</Link>
-            )}
+        <div className="md:hidden fixed inset-0 top-[104px] bg-background z-40 border-t border-outline-variant">
+          <div className="flex flex-col p-6 gap-6">
+            <Link href="/rentacar" onClick={() => setIsOpen(false)} className="text-headline-sm text-primary hover:text-secondary transition-colors">
+              Kiralama
+            </Link>
+            <Link href="/alisveris" onClick={() => setIsOpen(false)} className="text-headline-sm text-primary hover:text-secondary transition-colors">
+              Mağaza
+            </Link>
+            <Link href="/production" onClick={() => setIsOpen(false)} className="text-headline-sm text-primary hover:text-secondary transition-colors">
+              Medya
+            </Link>
+            <div className="border-t border-outline-variant pt-6">
+              {user ? (
+                <div className="flex flex-col gap-4">
+                  <Link href="/profile" onClick={() => setIsOpen(false)} className="text-body-lg text-on-surface-variant hover:text-secondary transition-colors">
+                    Merhaba, {user.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : user.username}
+                  </Link>
+                  {showAdminLink && (
+                    <Link href="/admin" onClick={() => setIsOpen(false)} className="btn-cta text-center">
+                      🛡️ Yönetim Paneli
+                    </Link>
+                  )}
+                </div>
+              ) : (
+                <div className="flex flex-col gap-4">
+                  <Link href="/login" onClick={() => setIsOpen(false)} className="btn-primary text-center">
+                    Giriş Yap
+                  </Link>
+                  <Link href="/register" onClick={() => setIsOpen(false)} className="btn-secondary text-center">
+                    Kayıt Ol
+                  </Link>
+                </div>
+              )}
+            </div>
           </div>
-
-          <button
-            onClick={() => { setIsOpen(false); setIsContactOpen(true); }}
-            className="w-full text-left text-primary hover:text-white transition-colors"
-          >
-            İletişim
-          </button>
-        </motion.div>
+        </div>
       )}
 
+      {/* Contact Modal */}
       <ContactModal isOpen={isContactOpen} onClose={() => setIsContactOpen(false)} />
-    </motion.header>
-  );
-}
-
-function NavLink({ href, children }: { href: string; children: React.ReactNode }) {
-  return (
-    <Link href={href}>
-      <motion.span
-        whileHover={{ y: -2, color: '#FF5A00' }}
-        className="text-sm font-medium text-gray-300 transition-colors"
-      >
-        {children}
-      </motion.span>
-    </Link>
+    </>
   );
 }
