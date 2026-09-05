@@ -1,6 +1,7 @@
 'use server';
 
 import { cookies } from 'next/headers';
+import { revalidateTag, revalidatePath } from 'next/cache';
 import { getAdminToken, getAdminUser, hasRole, type AdminRole } from '@/lib/admin-session';
 
 const INTERNAL_API_URL = process.env.INTERNAL_API_URL || 'http://backend:1337';
@@ -33,7 +34,6 @@ export async function adminLogin(email: string, password: string) {
 export async function adminLogout() {
   const cookieStore = await cookies();
   cookieStore.delete('admin_token');
-  // Also delete legacy cookie
   cookieStore.delete('admin_session');
   return { success: true };
 }
@@ -44,106 +44,153 @@ export async function getAdminName() {
   return `${admin.firstName} ${admin.lastName}`.trim() || admin.email;
 }
 
-// ===== INTERNAL HELPERS =====
+// ===== INTERNAL HELPERS & CORE FETCHER =====
 async function adminHeaders(): Promise<Record<string, string>> {
   const token = await getAdminToken();
   return {
     'Content-Type': 'application/json',
-    ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
   };
 }
 
 async function requireAdminRole(...roles: AdminRole[]): Promise<{ error?: string }> {
   const admin = await getAdminUser();
   if (!admin) return { error: 'Oturum süresi dolmuş. Lütfen tekrar giriş yapın.' };
-  if (!hasRole(admin, ...roles)) return { error: `Bu işlem için yetkiniz yok.` };
+  if (!hasRole(admin, ...roles)) return { error: 'Bu işlem için yetkiniz yok.' };
   return {};
 }
 
-// ===== KİRALAMA İŞLEMLERİ =====
-async function adminAction(endpoint: string, body: any) {
-  const check = await requireAdminRole('superadmin', 'admin');
-  if (check.error) return check;
+interface AdminFetchResult<T = any> {
+  success?: boolean;
+  data?: T;
+  error?: string;
+  ok?: boolean;
+  [key: string]: any;
+}
 
-  const headers = await adminHeaders();
-  const res = await fetch(`${INTERNAL_API_URL}/api/rental-operations/admin/${endpoint}`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify(body),
-  });
-  const data = await res.json();
-  if (!res.ok) return { error: data?.error?.details || data?.error?.message || 'İşlem başarısız.' };
-  return { success: true, data };
+/**
+ * Generic, DRY fetcher for admin operations.
+ * Handles role-based access check, headers injection, JSON serialization,
+ * error encapsulation, and automatic Next.js tag cache revalidation.
+ */
+async function adminFetch<T = any>(
+  endpoint: string,
+  options: RequestInit = {},
+  allowedRoles?: AdminRole[],
+  tagsToRevalidate?: string[],
+  pathsToRevalidate?: string[]
+): Promise<AdminFetchResult<T>> {
+  if (allowedRoles && allowedRoles.length > 0) {
+    const check = await requireAdminRole(...allowedRoles);
+    if (check.error) return { error: check.error };
+  }
+
+  try {
+    const token = await getAdminToken();
+    const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
+
+    const baseHeaders: Record<string, string> = {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
+      ...((options.headers as Record<string, string>) || {}),
+    };
+
+    const res = await fetch(`${INTERNAL_API_URL}${endpoint}`, {
+      ...options,
+      headers: baseHeaders,
+    });
+
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      return { error: data?.error?.details || data?.error?.message || data?.message || 'İşlem başarısız.' };
+    }
+
+    if (tagsToRevalidate) {
+      for (const tag of tagsToRevalidate) {
+        try {
+          (revalidateTag as any)(tag, 'default');
+        } catch {}
+      }
+    }
+
+    if (pathsToRevalidate) {
+      for (const p of pathsToRevalidate) {
+        try {
+          revalidatePath(p);
+        } catch {}
+      }
+    }
+
+    return { success: true, data: data?.data !== undefined ? data.data : data };
+  } catch {
+    return { error: 'Sunucuya bağlanılamadı.' };
+  }
+}
+
+// ===== KİRALAMA İŞLEMLERİ =====
+async function adminRentalAction(endpoint: string, body: any) {
+  const res = await adminFetch(
+    `/api/rental-operations/admin/${endpoint}`,
+    { method: 'POST', body: JSON.stringify(body) },
+    ['superadmin', 'admin'],
+    ['rentals', 'cars'],
+    ['/admin/kiralamalar', '/rentacar']
+  );
+  return res.error ? { error: res.error } : { success: true, data: res.data };
 }
 
 export async function approveRental(rentalId: string) {
-  return adminAction('approve', { rentalId });
+  return adminRentalAction('approve', { rentalId });
 }
 
 export async function rejectRental(rentalId: string) {
-  return adminAction('reject', { rentalId });
+  return adminRentalAction('reject', { rentalId });
 }
 
 export async function approveExtension(rentalId: string) {
-  return adminAction('approve-extension', { rentalId });
+  return adminRentalAction('approve-extension', { rentalId });
 }
 
 export async function rejectExtension(rentalId: string) {
-  return adminAction('reject-extension', { rentalId });
+  return adminRentalAction('reject-extension', { rentalId });
 }
 
 export async function completeRental(rentalId: string) {
-  return adminAction('complete', { rentalId });
+  return adminRentalAction('complete', { rentalId });
 }
 
 export async function approveEarlyReturn(rentalId: string) {
-  return adminAction('approve-early-return', { rentalId });
+  return adminRentalAction('approve-early-return', { rentalId });
 }
 
 export async function rejectEarlyReturn(rentalId: string) {
-  return adminAction('reject-early-return', { rentalId });
+  return adminRentalAction('reject-early-return', { rentalId });
 }
 
 export async function markRentalPaymentPaid(rentalId: string) {
-  return adminAction('mark-paid', { rentalId });
+  return adminRentalAction('mark-paid', { rentalId });
 }
 
 export async function unmarkRentalPaymentPaid(rentalId: string) {
-  return adminAction('unmark-paid', { rentalId });
+  return adminRentalAction('unmark-paid', { rentalId });
 }
 
-// ===== VERİ ÇEKME =====
 export async function fetchAdminRentals() {
-  try {
-    const headers = await adminHeaders();
-    const res = await fetch(`${INTERNAL_API_URL}/api/rental-operations/admin/all`, {
-      cache: 'no-store',
-      headers,
-    });
-    if (!res.ok) return [];
-    return await res.json();
-  } catch {
-    return [];
-  }
+  const res = await adminFetch('/api/rental-operations/admin/all', { cache: 'no-store' }, ['superadmin', 'admin', 'editor']);
+  return res.data || [];
 }
 
 export async function fetchAdminStats() {
-  try {
-    const headers = await adminHeaders();
-    const res = await fetch(`${INTERNAL_API_URL}/api/rental-operations/admin/stats`, {
-      cache: 'no-store',
-      headers,
-    });
-    if (!res.ok) return null;
-    return await res.json();
-  } catch {
-    return null;
-  }
+  const res = await adminFetch('/api/rental-operations/admin/stats', { cache: 'no-store' }, ['superadmin', 'admin', 'editor']);
+  return res.data || null;
 }
 
+// ===== ARAÇ YÖNETİMİ =====
 export async function fetchAdminCars() {
   try {
-    const res = await fetch(`${INTERNAL_API_URL}/api/cars?populate=*`, { cache: 'no-store' });
+    const res = await fetch(`${INTERNAL_API_URL}/api/cars?populate=*`, {
+      next: { tags: ['cars'], revalidate: 60 },
+    });
     if (!res.ok) return [];
     const data = await res.json();
     return data?.data || data || [];
@@ -152,12 +199,8 @@ export async function fetchAdminCars() {
   }
 }
 
-// ===== ARAÇ YÖNETİMİ =====
 export async function createCar(formData: FormData) {
-  const check = await requireAdminRole('superadmin', 'admin', 'editor');
-  if (check.error) return check;
-
-  const carData: any = {
+  const carData = {
     brand: formData.get('brand'),
     model: formData.get('model'),
     year: formData.get('year'),
@@ -171,292 +214,159 @@ export async function createCar(formData: FormData) {
     isAvailable: true,
   };
 
-  try {
-    const res = await fetch(`${INTERNAL_API_URL}/api/cars`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ data: carData }),
-    });
-    if (!res.ok) return { error: 'Araç eklenemedi.' };
-    return { success: true };
-  } catch {
-    return { error: 'Sunucuya bağlanılamadı.' };
-  }
+  return adminFetch(
+    '/api/cars',
+    { method: 'POST', body: JSON.stringify({ data: carData }) },
+    ['superadmin', 'admin', 'editor'],
+    ['cars'],
+    ['/admin/araclar', '/rentacar']
+  );
 }
 
 export async function updateCar(documentId: string, data: any) {
-  const check = await requireAdminRole('superadmin', 'admin', 'editor');
-  if (check.error) return check;
-
-  try {
-    const res = await fetch(`${INTERNAL_API_URL}/api/cars/${documentId}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ data }),
-    });
-    if (!res.ok) return { error: 'Araç güncellenemedi.' };
-    return { success: true };
-  } catch {
-    return { error: 'Sunucuya bağlanılamadı.' };
-  }
+  return adminFetch(
+    `/api/cars/${documentId}`,
+    { method: 'PUT', body: JSON.stringify({ data }) },
+    ['superadmin', 'admin', 'editor'],
+    ['cars'],
+    ['/admin/araclar', '/rentacar']
+  );
 }
 
 export async function deleteCar(documentId: string) {
-  const check = await requireAdminRole('superadmin', 'admin', 'editor');
-  if (check.error) return check;
-
-  try {
-    const res = await fetch(`${INTERNAL_API_URL}/api/cars/${documentId}`, {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-    });
-    if (!res.ok) return { error: 'Araç silinemedi.' };
-    return { success: true };
-  } catch {
-    return { error: 'Sunucuya bağlanılamadı.' };
-  }
+  return adminFetch(
+    `/api/cars/${documentId}`,
+    { method: 'DELETE' },
+    ['superadmin', 'admin', 'editor'],
+    ['cars'],
+    ['/admin/araclar', '/rentacar']
+  );
 }
 
-// ===== SİTE KULLANICI YÖNETİMİ (frontend users) =====
+// ===== KULLANICI YÖNETİMİ =====
 export async function fetchAdminUsers() {
-  const check = await requireAdminRole('superadmin', 'admin');
-  if (check.error) return [];
-
-  try {
-    const headers = await adminHeaders();
-    const res = await fetch(`${INTERNAL_API_URL}/api/admin/users`, {
-      cache: 'no-store',
-      headers,
-    });
-    if (!res.ok) return [];
-    return await res.json();
-  } catch {
-    return [];
-  }
+  const res = await adminFetch('/api/admin/users', { cache: 'no-store' }, ['superadmin', 'admin']);
+  return Array.isArray(res.data) ? res.data : [];
 }
 
 export async function updateUser(userId: string, data: any) {
-  const check = await requireAdminRole('superadmin', 'admin');
-  if (check.error) return check;
-
-  try {
-    const headers = await adminHeaders();
-    const res = await fetch(`${INTERNAL_API_URL}/api/admin/users/${userId}`, {
-      method: 'PUT',
-      headers,
-      body: JSON.stringify(data),
-    });
-    if (!res.ok) return { error: 'Kullanıcı güncellenemedi.' };
-    return { success: true };
-  } catch {
-    return { error: 'Sunucuya bağlanılamadı.' };
-  }
+  return adminFetch(
+    `/api/admin/users/${userId}`,
+    { method: 'PUT', body: JSON.stringify(data) },
+    ['superadmin', 'admin'],
+    undefined,
+    ['/admin/kullanicilar']
+  );
 }
 
 export async function deleteUser(userId: string) {
-  const check = await requireAdminRole('superadmin', 'admin');
-  if (check.error) return check;
-
-  try {
-    const headers = await adminHeaders();
-    const res = await fetch(`${INTERNAL_API_URL}/api/admin/users/${userId}`, {
-      method: 'DELETE',
-      headers,
-    });
-    if (!res.ok) return { error: 'Kullanıcı silinemedi.' };
-    return { success: true };
-  } catch {
-    return { error: 'Sunucuya bağlanılamadı.' };
-  }
+  return adminFetch(
+    `/api/admin/users/${userId}`,
+    { method: 'DELETE' },
+    ['superadmin', 'admin'],
+    undefined,
+    ['/admin/kullanicilar']
+  );
 }
 
 // ===== ROL YÖNETİMİ =====
 export async function fetchAdminRoles() {
-  const check = await requireAdminRole('superadmin', 'admin');
-  if (check.error) return [];
-
-  try {
-    const headers = await adminHeaders();
-    const res = await fetch(`${INTERNAL_API_URL}/api/admin/roles`, { cache: 'no-store', headers });
-    if (!res.ok) return [];
-    return await res.json();
-  } catch {
-    return [];
-  }
+  const res = await adminFetch('/api/admin/roles', { cache: 'no-store' }, ['superadmin', 'admin']);
+  return Array.isArray(res.data) ? res.data : [];
 }
 
 export async function fetchRoleDetail(roleId: number) {
-  const check = await requireAdminRole('superadmin', 'admin');
-  if (check.error) return null;
-
-  try {
-    const headers = await adminHeaders();
-    const res = await fetch(`${INTERNAL_API_URL}/api/admin/roles/${roleId}`, { cache: 'no-store', headers });
-    if (!res.ok) return null;
-    return await res.json();
-  } catch {
-    return null;
-  }
+  const res = await adminFetch(`/api/admin/roles/${roleId}`, { cache: 'no-store' }, ['superadmin', 'admin']);
+  return res.data || null;
 }
 
 export async function fetchPermissions() {
-  const check = await requireAdminRole('superadmin');
-  if (check.error) return { actions: [], grouped: {} };
-
-  try {
-    const headers = await adminHeaders();
-    const res = await fetch(`${INTERNAL_API_URL}/api/admin/permissions`, { cache: 'no-store', headers });
-    if (!res.ok) return { actions: [], grouped: {} };
-    return await res.json();
-  } catch {
-    return { actions: [], grouped: {} };
-  }
+  const res = await adminFetch('/api/admin/permissions', { cache: 'no-store' }, ['superadmin']);
+  return res.data || { actions: [], grouped: {} };
 }
 
 export async function createRole(name: string, description: string) {
-  const check = await requireAdminRole('superadmin');
-  if (check.error) return check;
-
-  try {
-    const headers = await adminHeaders();
-    const res = await fetch(`${INTERNAL_API_URL}/api/admin/roles`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({ name, description }),
-    });
-    if (!res.ok) return { error: 'Rol oluşturulamadı.' };
-    return { success: true };
-  } catch {
-    return { error: 'Sunucuya bağlanılamadı.' };
-  }
+  return adminFetch(
+    '/api/admin/roles',
+    { method: 'POST', body: JSON.stringify({ name, description }) },
+    ['superadmin'],
+    undefined,
+    ['/admin/roller']
+  );
 }
 
 export async function updateRole(roleId: number, data: { name?: string; description?: string }) {
-  const check = await requireAdminRole('superadmin');
-  if (check.error) return check;
-
-  try {
-    const headers = await adminHeaders();
-    const res = await fetch(`${INTERNAL_API_URL}/api/admin/roles/${roleId}`, {
-      method: 'PUT',
-      headers,
-      body: JSON.stringify(data),
-    });
-    if (!res.ok) return { error: 'Rol güncellenemedi.' };
-    return { success: true };
-  } catch {
-    return { error: 'Sunucuya bağlanılamadı.' };
-  }
+  return adminFetch(
+    `/api/admin/roles/${roleId}`,
+    { method: 'PUT', body: JSON.stringify(data) },
+    ['superadmin'],
+    undefined,
+    ['/admin/roller']
+  );
 }
 
 export async function deleteRole(roleId: number) {
-  const check = await requireAdminRole('superadmin');
-  if (check.error) return check;
-
-  try {
-    const headers = await adminHeaders();
-    const res = await fetch(`${INTERNAL_API_URL}/api/admin/roles/${roleId}`, {
-      method: 'DELETE',
-      headers,
-    });
-    const data = await res.json();
-    if (!res.ok) return { error: data?.error?.message || 'Rol silinemedi.' };
-    return { success: true };
-  } catch {
-    return { error: 'Sunucuya bağlanılamadı.' };
-  }
+  return adminFetch(
+    `/api/admin/roles/${roleId}`,
+    { method: 'DELETE' },
+    ['superadmin'],
+    undefined,
+    ['/admin/roller']
+  );
 }
 
 export async function updateRolePermissions(roleId: number, actions: string[]) {
-  const check = await requireAdminRole('superadmin');
-  if (check.error) return check;
-
-  try {
-    const headers = await adminHeaders();
-    const res = await fetch(`${INTERNAL_API_URL}/api/admin/roles/${roleId}/permissions`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({ actions }),
-    });
-    if (!res.ok) return { error: 'İzinler güncellenemedi.' };
-    return { success: true };
-  } catch {
-    return { error: 'Sunucuya bağlanılamadı.' };
-  }
+  return adminFetch(
+    `/api/admin/roles/${roleId}/permissions`,
+    { method: 'POST', body: JSON.stringify({ actions }) },
+    ['superadmin'],
+    undefined,
+    ['/admin/roller']
+  );
 }
 
 export async function assignUsersToRole(roleId: number, userIds: number[]) {
-  const check = await requireAdminRole('superadmin');
-  if (check.error) return check;
-
-  try {
-    const headers = await adminHeaders();
-    const res = await fetch(`${INTERNAL_API_URL}/api/admin/roles/${roleId}/users`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({ userIds }),
-    });
-    if (!res.ok) return { error: 'Kullanıcılar atanamadı.' };
-    return { success: true };
-  } catch {
-    return { error: 'Sunucuya bağlanılamadı.' };
-  }
+  return adminFetch(
+    `/api/admin/roles/${roleId}/users`,
+    { method: 'POST', body: JSON.stringify({ userIds }) },
+    ['superadmin'],
+    undefined,
+    ['/admin/roller']
+  );
 }
 
 // ===== MEDYA YÖNETİMİ =====
 export async function fetchAdminMedia() {
-  const check = await requireAdminRole('superadmin', 'admin', 'editor');
-  if (check.error) return [];
-
-  try {
-    const headers = await adminHeaders();
-    const res = await fetch(`${INTERNAL_API_URL}/api/admin/media`, { cache: 'no-store', headers });
-    if (!res.ok) return [];
-    return await res.json();
-  } catch {
-    return [];
-  }
+  const res = await adminFetch('/api/admin/media', { cache: 'no-store' }, ['superadmin', 'admin', 'editor']);
+  return Array.isArray(res.data) ? res.data : [];
 }
 
 export async function deleteMedia(fileId: number) {
-  const check = await requireAdminRole('superadmin', 'admin', 'editor');
-  if (check.error) return check;
-
-  try {
-    const headers = await adminHeaders();
-    const res = await fetch(`${INTERNAL_API_URL}/api/admin/media/${fileId}`, {
-      method: 'DELETE',
-      headers,
-    });
-    if (!res.ok) return { error: 'Dosya silinemedi.' };
-    return { success: true };
-  } catch {
-    return { error: 'Sunucuya bağlanılamadı.' };
-  }
+  return adminFetch(
+    `/api/admin/media/${fileId}`,
+    { method: 'DELETE' },
+    ['superadmin', 'admin', 'editor'],
+    undefined,
+    ['/admin/medya']
+  );
 }
 
 export async function uploadMedia(formData: FormData) {
-  const check = await requireAdminRole('superadmin', 'admin', 'editor');
-  if (check.error) return check;
-
-  try {
-    const token = await getAdminToken();
-    const res = await fetch(`${INTERNAL_API_URL}/api/admin/media/upload`, {
-      method: 'POST',
-      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
-      body: formData,
-    });
-    if (!res.ok) return { error: 'Dosya yüklenemedi.' };
-    return { success: true, data: await res.json() };
-  } catch {
-    return { error: 'Sunucuya bağlanılamadı.' };
-  }
+  return adminFetch(
+    '/api/admin/media/upload',
+    { method: 'POST', body: formData },
+    ['superadmin', 'admin', 'editor'],
+    undefined,
+    ['/admin/medya']
+  );
 }
 
 // ===== ANASAYFA MEDYA YÖNETİMİ =====
 export async function fetchHomepageMedia() {
   try {
-    const res = await fetch(`${INTERNAL_API_URL}/api/homepage-media`, { cache: 'no-store' });
+    const res = await fetch(`${INTERNAL_API_URL}/api/homepage-media`, {
+      next: { tags: ['homepage_media'], revalidate: 300 },
+    });
     if (!res.ok) return [];
     const data = await res.json();
     return data?.data || [];
@@ -466,184 +376,117 @@ export async function fetchHomepageMedia() {
 }
 
 export async function createHomepageMedia(data: {
-  title: string; description: string; mediaType: string;
-  mediaUrl: string; thumbnailUrl?: string; sortOrder?: number;
+  title: string;
+  description: string;
+  mediaType: string;
+  mediaUrl: string;
+  thumbnailUrl?: string;
+  sortOrder?: number;
 }) {
-  const check = await requireAdminRole('superadmin', 'admin', 'editor');
-  if (check.error) return check;
-
-  try {
-    const headers = await adminHeaders();
-    const res = await fetch(`${INTERNAL_API_URL}/api/admin/homepage-media`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(data),
-    });
-    if (!res.ok) return { error: 'Medya eklenemedi.' };
-    return { success: true };
-  } catch {
-    return { error: 'Sunucuya bağlanılamadı.' };
-  }
+  return adminFetch(
+    '/api/admin/homepage-media',
+    { method: 'POST', body: JSON.stringify(data) },
+    ['superadmin', 'admin', 'editor'],
+    ['homepage_media'],
+    ['/admin/anasayfa-icerik', '/']
+  );
 }
 
 export async function updateHomepageMedia(id: number, data: any) {
-  const check = await requireAdminRole('superadmin', 'admin', 'editor');
-  if (check.error) return check;
-
-  try {
-    const headers = await adminHeaders();
-    const res = await fetch(`${INTERNAL_API_URL}/api/admin/homepage-media/${id}`, {
-      method: 'PUT',
-      headers,
-      body: JSON.stringify(data),
-    });
-    if (!res.ok) return { error: 'Medya güncellenemedi.' };
-    return { success: true };
-  } catch {
-    return { error: 'Sunucuya bağlanılamadı.' };
-  }
+  return adminFetch(
+    `/api/admin/homepage-media/${id}`,
+    { method: 'PUT', body: JSON.stringify(data) },
+    ['superadmin', 'admin', 'editor'],
+    ['homepage_media'],
+    ['/admin/anasayfa-icerik', '/']
+  );
 }
 
 export async function deleteHomepageMedia(id: number) {
-  const check = await requireAdminRole('superadmin', 'admin', 'editor');
-  if (check.error) return check;
-
-  try {
-    const headers = await adminHeaders();
-    const res = await fetch(`${INTERNAL_API_URL}/api/admin/homepage-media/${id}`, {
-      method: 'DELETE',
-      headers,
-    });
-    if (!res.ok) return { error: 'Medya silinemedi.' };
-    return { success: true };
-  } catch {
-    return { error: 'Sunucuya bağlanılamadı.' };
-  }
+  return adminFetch(
+    `/api/admin/homepage-media/${id}`,
+    { method: 'DELETE' },
+    ['superadmin', 'admin', 'editor'],
+    ['homepage_media'],
+    ['/admin/anasayfa-icerik', '/']
+  );
 }
 
 // ===== MUHASEBE / FİNANSAL RAPORLAMA =====
 export async function fetchFinanceReport(period: string = 'monthly', startDate?: string, endDate?: string) {
-  const check = await requireAdminRole('superadmin', 'admin');
-  if (check.error) return null;
-
-  try {
-    const headers = await adminHeaders();
-    let url = `${INTERNAL_API_URL}/api/admin/finance/report?period=${period}`;
-    if (period === 'custom' && startDate) {
-      url += `&startDate=${encodeURIComponent(startDate)}`;
-      if (endDate) {
-        url += `&endDate=${encodeURIComponent(endDate)}`;
-      }
-    }
-
-    const res = await fetch(url, {
-      cache: 'no-store',
-      headers,
-    });
-    if (!res.ok) return null;
-    return await res.json();
-  } catch {
-    return null;
+  let url = `/api/admin/finance/report?period=${period}`;
+  if (period === 'custom' && startDate) {
+    url += `&startDate=${encodeURIComponent(startDate)}`;
+    if (endDate) url += `&endDate=${encodeURIComponent(endDate)}`;
   }
+  const res = await adminFetch(url, { cache: 'no-store' }, ['superadmin', 'admin']);
+  return res.data || null;
 }
 
 // ===== OFİS YÖNETİMİ =====
 export async function fetchAdminOffices() {
-  try {
-    const res = await fetch(`${INTERNAL_API_URL}/api/offices`, { cache: 'no-store' });
-    if (!res.ok) return [];
-    const data = await res.json();
-    return data?.data || [];
-  } catch {
-    return [];
-  }
+  const res = await adminFetch('/api/offices', { next: { tags: ['offices'], revalidate: 300 } });
+  return Array.isArray(res.data) ? res.data : [];
 }
 
-export async function createOffice(data: { name: string; city: string; address: string; phone: string; location?: string; openingTime?: string; closingTime?: string }) {
-  const check = await requireAdminRole('superadmin', 'admin', 'editor');
-  if (check.error) return check;
-
-  try {
-    const headers = await adminHeaders();
-    const res = await fetch(`${INTERNAL_API_URL}/api/admin/offices`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(data),
-    });
-    if (!res.ok) return { error: 'Ofis eklenemedi.' };
-    return { success: true };
-  } catch {
-    return { error: 'Sunucuya bağlanılamadı.' };
-  }
+export async function createOffice(data: {
+  name: string;
+  city: string;
+  address: string;
+  phone: string;
+  location?: string;
+  openingTime?: string;
+  closingTime?: string;
+}) {
+  return adminFetch(
+    '/api/admin/offices',
+    { method: 'POST', body: JSON.stringify(data) },
+    ['superadmin', 'admin', 'editor'],
+    ['offices'],
+    ['/admin/ofisler', '/ofislerimiz', '/']
+  );
 }
 
 export async function updateOffice(documentId: string, data: any) {
-  const check = await requireAdminRole('superadmin', 'admin', 'editor');
-  if (check.error) return check;
-
-  try {
-    const headers = await adminHeaders();
-    const res = await fetch(`${INTERNAL_API_URL}/api/admin/offices/${documentId}`, {
-      method: 'PUT',
-      headers,
-      body: JSON.stringify(data),
-    });
-    if (!res.ok) return { error: 'Ofis güncellenemedi.' };
-    return { success: true };
-  } catch {
-    return { error: 'Sunucuya bağlanılamadı.' };
-  }
+  return adminFetch(
+    `/api/admin/offices/${documentId}`,
+    { method: 'PUT', body: JSON.stringify(data) },
+    ['superadmin', 'admin', 'editor'],
+    ['offices'],
+    ['/admin/ofisler', '/ofislerimiz', '/']
+  );
 }
 
 export async function deleteOffice(documentId: string) {
-  const check = await requireAdminRole('superadmin', 'admin', 'editor');
-  if (check.error) return check;
-
-  try {
-    const headers = await adminHeaders();
-    const res = await fetch(`${INTERNAL_API_URL}/api/admin/offices/${documentId}`, {
-      method: 'DELETE',
-      headers,
-    });
-    if (!res.ok) return { error: 'Ofis silinemedi.' };
-    return { success: true };
-  } catch {
-    return { error: 'Sunucuya bağlanılamadı.' };
-  }
+  return adminFetch(
+    `/api/admin/offices/${documentId}`,
+    { method: 'DELETE' },
+    ['superadmin', 'admin', 'editor'],
+    ['offices'],
+    ['/admin/ofisler', '/ofislerimiz', '/']
+  );
 }
 
-// ===== ADMIN PANEL KULLANICI YÖNETİMİ (admin_users tablosu) =====
+// ===== ADMIN PANEL KULLANICI YÖNETİMİ =====
 export async function fetchAdminPanelUsers() {
-  const check = await requireAdminRole('superadmin', 'admin');
-  if (check.error) return [];
-
-  try {
-    const headers = await adminHeaders();
-    const res = await fetch(`${INTERNAL_API_URL}/api/admin/panel/users`, { cache: 'no-store', headers });
-    if (!res.ok) return [];
-    return await res.json();
-  } catch {
-    return [];
-  }
+  const res = await adminFetch('/api/admin/panel/users', { cache: 'no-store' }, ['superadmin', 'admin']);
+  return Array.isArray(res.data) ? res.data : [];
 }
 
-export async function createAdminPanelUser(data: { firstName: string; lastName: string; email: string; password: string; role: string }) {
-  const check = await requireAdminRole('superadmin', 'admin');
-  if (check.error) return check;
-
-  try {
-    const headers = await adminHeaders();
-    const res = await fetch(`${INTERNAL_API_URL}/api/admin/panel/users`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(data),
-    });
-    const result = await res.json();
-    if (!res.ok) return { error: result?.error?.message || 'Kullanıcı eklenemedi.' };
-    return { success: true, data: result };
-  } catch {
-    return { error: 'Sunucuya bağlanılamadı.' };
-  }
+export async function createAdminPanelUser(data: {
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+  role: string;
+}) {
+  return adminFetch(
+    '/api/admin/panel/users',
+    { method: 'POST', body: JSON.stringify(data) },
+    ['superadmin', 'admin'],
+    undefined,
+    ['/admin/kullanicilar']
+  );
 }
 
 export async function updateAdminPanelUser(userId: string, data: any) {
@@ -660,18 +503,18 @@ export async function updateAdminPanelUser(userId: string, data: any) {
     const result = await res.json();
     if (!res.ok) return { error: result?.error?.message || 'Kullanıcı güncellenemedi.' };
 
-    // If new JWT returned (self-update), refresh the cookie
     if (result.jwt) {
       const cookieStore = await cookies();
       cookieStore.set('admin_token', result.jwt, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
-        maxAge: 60 * 60 * 24, // 24 hours
+        maxAge: 60 * 60 * 24,
         path: '/',
       });
     }
 
+    revalidatePath('/admin/kullanicilar');
     return { success: true };
   } catch {
     return { error: 'Sunucuya bağlanılamadı.' };
@@ -679,125 +522,85 @@ export async function updateAdminPanelUser(userId: string, data: any) {
 }
 
 export async function deleteAdminPanelUser(userId: string) {
-  const check = await requireAdminRole('superadmin', 'admin');
-  if (check.error) return check;
-
-  try {
-    const headers = await adminHeaders();
-    const res = await fetch(`${INTERNAL_API_URL}/api/admin/panel/users/${userId}`, {
-      method: 'DELETE',
-      headers,
-    });
-    const result = await res.json();
-    if (!res.ok) return { error: result?.error?.message || 'Kullanıcı silinemedi.' };
-    return { success: true };
-  } catch {
-    return { error: 'Sunucuya bağlanılamadı.' };
-  }
+  return adminFetch(
+    `/api/admin/panel/users/${userId}`,
+    { method: 'DELETE' },
+    ['superadmin', 'admin'],
+    undefined,
+    ['/admin/kullanicilar']
+  );
 }
 
 // ===== ALIŞVERİŞ YÖNETİMİ =====
 export async function fetchShopItems() {
-  try {
-    const headers = await adminHeaders();
-    const res = await fetch(`${INTERNAL_API_URL}/api/admin/shop/items`, { headers, cache: 'no-store' });
-    if (!res.ok) return [];
-    const data = await res.json();
-    return data?.data || [];
-  } catch {
-    return [];
-  }
+  const res = await adminFetch('/api/admin/shop/items', { next: { tags: ['shop'], revalidate: 60 } });
+  return Array.isArray(res.data) ? res.data : [];
 }
 
 export async function createShopItem(item: any) {
-  try {
-    const headers = await adminHeaders();
-    const res = await fetch(`${INTERNAL_API_URL}/api/admin/shop/items`, {
-      method: 'POST',
-      headers: { ...headers, 'Content-Type': 'application/json' },
-      body: JSON.stringify(item),
-    });
-    const data = await res.json();
-    if (!res.ok) return { error: data?.error?.message || 'Ürün eklenemedi.' };
-    return { success: true, data: data.data };
-  } catch {
-    return { error: 'Sunucuya bağlanılamadı.' };
-  }
+  return adminFetch(
+    '/api/admin/shop/items',
+    { method: 'POST', body: JSON.stringify(item) },
+    ['superadmin', 'admin', 'editor'],
+    ['shop'],
+    ['/admin/alisveris', '/alisveris', '/']
+  );
 }
 
 export async function updateShopItem(id: number, updates: any) {
-  try {
-    const headers = await adminHeaders();
-    const res = await fetch(`${INTERNAL_API_URL}/api/admin/shop/items/${id}`, {
-      method: 'PUT',
-      headers: { ...headers, 'Content-Type': 'application/json' },
-      body: JSON.stringify(updates),
-    });
-    const data = await res.json();
-    if (!res.ok) return { error: data?.error?.message || 'Ürün güncellenemedi.' };
-    return { success: true };
-  } catch {
-    return { error: 'Sunucuya bağlanılamadı.' };
-  }
+  return adminFetch(
+    `/api/admin/shop/items/${id}`,
+    { method: 'PUT', body: JSON.stringify(updates) },
+    ['superadmin', 'admin', 'editor'],
+    ['shop'],
+    ['/admin/alisveris', '/alisveris', '/']
+  );
 }
 
 export async function deleteShopItem(id: number) {
-  try {
-    const headers = await adminHeaders();
-    const res = await fetch(`${INTERNAL_API_URL}/api/admin/shop/items/${id}`, {
-      method: 'DELETE',
-      headers,
-    });
-    if (!res.ok) return { error: 'Ürün silinemedi.' };
-    return { success: true };
-  } catch {
-    return { error: 'Sunucuya bağlanılamadı.' };
-  }
+  return adminFetch(
+    `/api/admin/shop/items/${id}`,
+    { method: 'DELETE' },
+    ['superadmin', 'admin', 'editor'],
+    ['shop'],
+    ['/admin/alisveris', '/alisveris', '/']
+  );
 }
 
 export async function syncShopItems() {
-  try {
-    const headers = await adminHeaders();
-    const res = await fetch(`${INTERNAL_API_URL}/api/admin/shop/sync`, {
-      method: 'POST',
-      headers,
-    });
-    return await res.json();
-  } catch {
-    return { ok: false, message: 'Sunucuya bağlanılamadı.', synced: 0 };
-  }
+  const res = await adminFetch(
+    '/api/admin/shop/sync',
+    { method: 'POST' },
+    ['superadmin', 'admin', 'editor'],
+    ['shop'],
+    ['/admin/alisveris', '/alisveris', '/']
+  );
+  return res.data || { ok: false, message: res.error || 'Sunucuya bağlanılamadı.', synced: 0 };
 }
 
 export async function fetchShopSettings() {
-  try {
-    const headers = await adminHeaders();
-    const res = await fetch(`${INTERNAL_API_URL}/api/admin/shop/settings`, { headers, cache: 'no-store' });
-    if (!res.ok) return [];
-    const data = await res.json();
-    return data?.data || [];
-  } catch {
-    return [];
-  }
+  const res = await adminFetch('/api/admin/shop/settings', { cache: 'no-store' });
+  return Array.isArray(res.data) ? res.data : [];
 }
 
 export async function updateShopSettings(settings: any) {
-  try {
-    const headers = await adminHeaders();
-    const res = await fetch(`${INTERNAL_API_URL}/api/admin/shop/settings`, {
-      method: 'PUT',
-      headers: { ...headers, 'Content-Type': 'application/json' },
-      body: JSON.stringify(settings),
-    });
-    const data = await res.json();
-    if (!res.ok) return { error: data?.error?.message || 'Ayarlar güncellenemedi.' };
-    return { success: true };
-  } catch {
-    return { error: 'Sunucuya bağlanılamadı.' };
-  }
+  return adminFetch(
+    '/api/admin/shop/settings',
+    { method: 'PUT', body: JSON.stringify(settings) },
+    ['superadmin', 'admin', 'editor'],
+    ['shop'],
+    ['/admin/alisveris']
+  );
 }
 
-// Public: Aktif ürünleri getir (SSR)
-export async function fetchPublicShopItems(filters?: { platform?: string; category?: string; sub_category?: string; vehicle_brand?: string; vehicle_model?: string }) {
+// Public Shop Items (Tag-based ISR)
+export async function fetchPublicShopItems(filters?: {
+  platform?: string;
+  category?: string;
+  sub_category?: string;
+  vehicle_brand?: string;
+  vehicle_model?: string;
+}) {
   try {
     const params = new URLSearchParams();
     if (filters) {
@@ -807,7 +610,9 @@ export async function fetchPublicShopItems(filters?: { platform?: string; catego
       if (filters.vehicle_brand && filters.vehicle_brand !== 'all') params.set('vehicle_brand', filters.vehicle_brand);
       if (filters.vehicle_model && filters.vehicle_model !== 'all') params.set('vehicle_model', filters.vehicle_model);
     }
-    const res = await fetch(`${INTERNAL_API_URL}/api/shop/items?${params}`, { cache: 'no-store' });
+    const res = await fetch(`${INTERNAL_API_URL}/api/shop/items?${params}`, {
+      next: { tags: ['shop'], revalidate: 180 },
+    });
     if (!res.ok) return [];
     const data = await res.json();
     return data?.data || [];
@@ -818,7 +623,9 @@ export async function fetchPublicShopItems(filters?: { platform?: string; catego
 
 export async function fetchShopCategories() {
   try {
-    const res = await fetch(`${INTERNAL_API_URL}/api/shop/categories`, { cache: 'no-store' });
+    const res = await fetch(`${INTERNAL_API_URL}/api/shop/categories`, {
+      next: { tags: ['shop_categories'], revalidate: 300 },
+    });
     if (!res.ok) return [];
     const data = await res.json();
     return data?.data || [];
@@ -829,45 +636,26 @@ export async function fetchShopCategories() {
 
 // ===== DESTEK / ŞİKAYET YÖNETİMİ =====
 export async function fetchSupportTickets() {
-  const check = await requireAdminRole('superadmin', 'admin');
-  if (check.error) return [];
-
-  try {
-    const headers = await adminHeaders();
-    const res = await fetch(`${INTERNAL_API_URL}/api/admin/support/tickets`, { cache: 'no-store', headers });
-    if (!res.ok) return [];
-    const data = await res.json();
-    return data?.data || [];
-  } catch {
-    return [];
-  }
+  const res = await adminFetch('/api/admin/support/tickets', { cache: 'no-store' }, ['superadmin', 'admin']);
+  return Array.isArray(res.data) ? res.data : [];
 }
 
 export async function updateSupportTicketStatus(ticketId: number, status: string) {
-  const check = await requireAdminRole('superadmin', 'admin');
-  if (check.error) return check;
-
-  try {
-    const headers = await adminHeaders();
-    const res = await fetch(`${INTERNAL_API_URL}/api/admin/support/tickets/${ticketId}`, {
-      method: 'PUT',
-      headers,
-      body: JSON.stringify({ status }),
-    });
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      return { error: data?.error?.message || 'Statü güncellenemedi.' };
-    }
-    return { success: true };
-  } catch {
-    return { error: 'Sunucuya bağlanılamadı.' };
-  }
+  return adminFetch(
+    `/api/admin/support/tickets/${ticketId}`,
+    { method: 'PUT', body: JSON.stringify({ status }) },
+    ['superadmin', 'admin'],
+    undefined,
+    ['/admin/destek']
+  );
 }
 
 // ===== PROJE YÖNETİMİ =====
 export async function fetchPublicProjects() {
   try {
-    const res = await fetch(`${INTERNAL_API_URL}/api/projects?active=true`, { cache: 'no-store' });
+    const res = await fetch(`${INTERNAL_API_URL}/api/projects?active=true`, {
+      next: { tags: ['projects'], revalidate: 300 },
+    });
     if (!res.ok) return [];
     const data = await res.json();
     return data?.data || [];
@@ -877,93 +665,58 @@ export async function fetchPublicProjects() {
 }
 
 export async function fetchAdminProjects() {
-  const check = await requireAdminRole('superadmin', 'admin', 'editor');
-  if (check.error) return [];
-
-  try {
-    const headers = await adminHeaders();
-    const res = await fetch(`${INTERNAL_API_URL}/api/projects`, { cache: 'no-store', headers });
-    if (!res.ok) return [];
-    const data = await res.json();
-    return data?.data || [];
-  } catch {
-    return [];
-  }
+  const res = await adminFetch(
+    '/api/projects',
+    { next: { tags: ['projects'], revalidate: 60 } },
+    ['superadmin', 'admin', 'editor']
+  );
+  return Array.isArray(res.data) ? res.data : [];
 }
 
 export async function createProject(data: {
-  title: string; description: string; category: string;
-  mediaType: string; mediaUrl: string; thumbnailUrl?: string; sortOrder?: number;
+  title: string;
+  description: string;
+  category: string;
+  mediaType: string;
+  mediaUrl: string;
+  thumbnailUrl?: string;
+  sortOrder?: number;
 }) {
-  const check = await requireAdminRole('superadmin', 'admin', 'editor');
-  if (check.error) return check;
-
-  try {
-    const headers = await adminHeaders();
-    const res = await fetch(`${INTERNAL_API_URL}/api/admin/projects`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(data),
-    });
-    if (!res.ok) {
-      const errData = await res.json().catch(() => ({}));
-      return { error: errData?.error?.message || 'Proje eklenemedi.' };
-    }
-    return { success: true };
-  } catch {
-    return { error: 'Sunucuya bağlanılamadı.' };
-  }
+  return adminFetch(
+    '/api/admin/projects',
+    { method: 'POST', body: JSON.stringify(data) },
+    ['superadmin', 'admin', 'editor'],
+    ['projects'],
+    ['/admin/projelerimiz', '/projelerimiz', '/']
+  );
 }
 
 export async function updateProject(id: number, data: any) {
-  const check = await requireAdminRole('superadmin', 'admin', 'editor');
-  if (check.error) return check;
-
-  try {
-    const headers = await adminHeaders();
-    const res = await fetch(`${INTERNAL_API_URL}/api/admin/projects/${id}`, {
-      method: 'PUT',
-      headers,
-      body: JSON.stringify(data),
-    });
-    if (!res.ok) return { error: 'Proje güncellenemedi.' };
-    return { success: true };
-  } catch {
-    return { error: 'Sunucuya bağlanılamadı.' };
-  }
+  return adminFetch(
+    `/api/admin/projects/${id}`,
+    { method: 'PUT', body: JSON.stringify(data) },
+    ['superadmin', 'admin', 'editor'],
+    ['projects'],
+    ['/admin/projelerimiz', '/projelerimiz', '/']
+  );
 }
 
 export async function deleteProject(id: number) {
-  const check = await requireAdminRole('superadmin', 'admin', 'editor');
-  if (check.error) return check;
-
-  try {
-    const headers = await adminHeaders();
-    const res = await fetch(`${INTERNAL_API_URL}/api/admin/projects/${id}`, {
-      method: 'DELETE',
-      headers,
-    });
-    if (!res.ok) return { error: 'Proje silinemedi.' };
-    return { success: true };
-  } catch {
-    return { error: 'Sunucuya bağlanılamadı.' };
-  }
+  return adminFetch(
+    `/api/admin/projects/${id}`,
+    { method: 'DELETE' },
+    ['superadmin', 'admin', 'editor'],
+    ['projects'],
+    ['/admin/projelerimiz', '/projelerimiz', '/']
+  );
 }
 
 export async function uploadProjectMedia(formData: FormData) {
-  const check = await requireAdminRole('superadmin', 'admin', 'editor');
-  if (check.error) return check;
-
-  try {
-    const token = await getAdminToken();
-    const res = await fetch(`${INTERNAL_API_URL}/api/admin/projects/upload`, {
-      method: 'POST',
-      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
-      body: formData,
-    });
-    if (!res.ok) return { error: 'Dosya yüklenemedi.' };
-    return { success: true, data: await res.json() };
-  } catch {
-    return { error: 'Sunucuya bağlanılamadı.' };
-  }
+  return adminFetch(
+    '/api/admin/projects/upload',
+    { method: 'POST', body: formData },
+    ['superadmin', 'admin', 'editor'],
+    ['projects'],
+    ['/admin/projelerimiz', '/projelerimiz']
+  );
 }

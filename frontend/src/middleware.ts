@@ -33,7 +33,7 @@ export function middleware(req: NextRequest) {
         if (!payload.role || !ADMIN_ROLES.includes(payload.role)) {
           return NextResponse.redirect(new URL('/admin/login', req.url));
         }
-      } catch (e) {
+      } catch {
         // Invalid token format
         return NextResponse.redirect(new URL('/admin/login', req.url));
       }

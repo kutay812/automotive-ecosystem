@@ -1,8 +1,6 @@
 import type { Metadata } from 'next';
 import OfficesShowcase from '@/components/OfficesShowcase';
 
-export const dynamic = 'force-dynamic';
-
 const INTERNAL_API_URL = process.env.INTERNAL_API_URL || 'http://backend:1337';
 
 export const metadata: Metadata = {
@@ -14,7 +12,7 @@ async function getActiveOffices() {
   try {
     const res = await fetch(
       `${INTERNAL_API_URL}/api/offices?filters[isActive][$eq]=true`,
-      { cache: 'no-store' }
+      { next: { tags: ['offices'], revalidate: 300 } }
     );
     if (!res.ok) return [];
     const data = await res.json();

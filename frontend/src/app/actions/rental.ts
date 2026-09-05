@@ -1,7 +1,7 @@
 'use server';
 
 import crypto from 'crypto';
-import { getUser, getSession } from '@/lib/session';
+import { getSession } from '@/lib/session';
 
 const INTERNAL_API_URL = process.env.INTERNAL_API_URL || 'http://backend:1337';
 
@@ -73,7 +73,7 @@ export async function returnNoticeRental(rentalId: string, earlyReturnDate?: str
   return { success: true };
 }
 
-export async function getMyRentals(userId: string | number) {
+export async function getMyRentals(_userId?: string | number) {
   const token = await getSession();
   const res = await fetch(`${INTERNAL_API_URL}/api/rental-operations/my-rentals`, {
     headers: {

@@ -37,27 +37,35 @@ export async function fetchAPI(path: string, options: RequestInit = {}) {
 
     const data = await response.json();
     return data;
-  } catch (error) {
+  } catch {
     return { error: true, message: 'Network Fetch Error' };
   }
 }
 
 export async function getCars(pickupOffice?: string) {
   const qs = pickupOffice ? `?pickupOffice=${encodeURIComponent(pickupOffice)}&populate=*` : '?populate=*';
-  return await fetchAPI(`/api/cars${qs}`);
+  return await fetchAPI(`/api/cars${qs}`, {
+    next: { tags: ['cars'], revalidate: 60 },
+  } as RequestInit);
 }
 
 export async function getProjects() {
-  return await fetchAPI('/api/projects?populate=*');
+  return await fetchAPI('/api/projects?populate=*', {
+    next: { tags: ['projects'], revalidate: 300 },
+  } as RequestInit);
 }
 
 export async function getOffices() {
-  return await fetchAPI('/api/offices?filters[isActive][$eq]=true');
+  return await fetchAPI('/api/offices?filters[isActive][$eq]=true', {
+    next: { tags: ['offices'], revalidate: 300 },
+  } as RequestInit);
 }
 
 export async function getActiveRentals() {
   // Fetch rentals that are not cancelled or finished, to prevent double booking
-  return await fetchAPI('/api/rentals?filters[rentalStatus][$notIn][0]=bitti&filters[rentalStatus][$notIn][1]=iptal&populate=car');
+  return await fetchAPI('/api/rentals?filters[rentalStatus][$notIn][0]=bitti&filters[rentalStatus][$notIn][1]=iptal&populate=car', {
+    cache: 'no-store',
+  });
 }
 
 export async function submitLead(data: any) {

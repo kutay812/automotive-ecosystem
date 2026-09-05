@@ -1,4 +1,5 @@
-import { getCars, getOffices } from '@/lib/api';
+import { getCars, getOffices, getActiveRentals } from '@/lib/api';
+import { getUser } from '@/lib/session';
 import RentCarList from '@/components/RentCarList';
 import type { Metadata } from 'next';
 
@@ -9,13 +10,11 @@ export const metadata: Metadata = {
 
 const STRAPI_URL = process.env.NEXT_PUBLIC_STRAPI_URL || 'http://127.0.0.1:1337';
 
-export const dynamic = 'force-dynamic';
-
 export default async function RentACarHome() {
   const [officesResponse, rentalsResponse, user] = await Promise.all([
     getOffices(),
-    import('@/lib/api').then(m => m.getActiveRentals()),
-    import('@/lib/session').then(m => m.getUser())
+    getActiveRentals(),
+    getUser(),
   ]);
 
   const offices = officesResponse?.data || [];

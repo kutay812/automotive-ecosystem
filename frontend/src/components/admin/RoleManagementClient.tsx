@@ -45,7 +45,7 @@ interface RoleManagementProps {
   allUsers: any[];
 }
 
-export default function RoleManagementClient({ roles: initialRoles, allPermissions, groupedPermissions, allUsers }: RoleManagementProps) {
+export default function RoleManagementClient({ roles: initialRoles, allPermissions: _allPermissions, groupedPermissions, allUsers }: RoleManagementProps) {
   const router = useRouter();
   const [selectedRole, setSelectedRole] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'permissions' | 'users'>('permissions');

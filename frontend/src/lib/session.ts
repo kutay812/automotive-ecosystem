@@ -20,7 +20,7 @@ export async function getUser() {
 
     if (user?.error) return null;
     return user || null;
-  } catch (error) {
+  } catch {
     return null;
   }
 }

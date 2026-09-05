@@ -14,9 +14,8 @@ async function getActiveOffices() {
   try {
     const res = await fetch(
       `${INTERNAL_API_URL}/api/offices?filters[isActive][$eq]=true`,
-      { cache: 'no-store' }
+      { next: { tags: ['offices'], revalidate: 300 } }
     );
-    console.log(`📡 getActiveOffices response: ${res.status} ${res.statusText}`);
     if (!res.ok) return [];
     const data = await res.json();
     return data?.data || [];
@@ -27,7 +26,9 @@ async function getActiveOffices() {
 
 async function getActiveShopItems() {
   try {
-    const res = await fetch(`${INTERNAL_API_URL}/api/shop/items`, { cache: 'no-store' });
+    const res = await fetch(`${INTERNAL_API_URL}/api/shop/items`, {
+      next: { tags: ['shop'], revalidate: 300 },
+    });
     if (!res.ok) return [];
     const data = await res.json();
     return data?.data || [];
@@ -38,7 +39,9 @@ async function getActiveShopItems() {
 
 async function getActiveProjects() {
   try {
-    const res = await fetch(`${INTERNAL_API_URL}/api/projects?active=true`, { cache: 'no-store' });
+    const res = await fetch(`${INTERNAL_API_URL}/api/projects?active=true`, {
+      next: { tags: ['projects'], revalidate: 300 },
+    });
     if (!res.ok) return [];
     const data = await res.json();
     return data?.data || [];

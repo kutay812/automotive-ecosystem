@@ -15,7 +15,7 @@ export default function Navbar({ user, adminRole }: { user?: any; adminRole?: st
 
   return (
     <>
-      <nav className="w-full h-16 flex items-center bg-background border-b border-outline-variant sticky top-[40px] z-50">
+      <nav className="w-full h-16 flex items-center bg-background border-b border-outline-variant sticky top-0 z-50">
         <div className="flex justify-between items-center px-6 w-full max-w-[1280px] mx-auto">
           {/* Logo */}
           <Link href="/" className="text-display-lg-mobile font-extrabold tracking-tighter text-primary hover:opacity-80 transition-opacity">

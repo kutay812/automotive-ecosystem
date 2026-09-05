@@ -1,8 +1,6 @@
 import { fetchPublicShopItems, fetchShopCategories } from '@/app/actions/admin';
 import ShopShowcase from '@/components/ShopShowcase';
 
-export const dynamic = 'force-dynamic';
-
 export const metadata = {
   title: 'Alışveriş | Example Market',
   description: 'Example mağazalarındaki ürünlere göz atın. Trendyol, Hepsiburada ve N11 üzerinden doğrudan satın alın.',

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Outfit } from "next/font/google";
 import Script from "next/script";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -10,6 +10,13 @@ import "./globals.css";
 
 const inter = Inter({
   variable: "--font-inter",
+  subsets: ["latin"],
+  display: "swap",
+  weight: ["400", "500", "600", "700", "800", "900"],
+});
+
+const outfit = Outfit({
+  variable: "--font-outfit",
   subsets: ["latin"],
   display: "swap",
   weight: ["400", "500", "600", "700", "800", "900"],
@@ -36,7 +43,7 @@ export default async function RootLayout({
     <html
       lang="tr"
       suppressHydrationWarning
-      className={`${inter.variable} h-full antialiased`}
+      className={`${inter.variable} ${outfit.variable} h-full antialiased`}
     >
       <head>
         <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
@@ -44,9 +51,11 @@ export default async function RootLayout({
 
       <body suppressHydrationWarning className={`min-h-full flex flex-col font-[family-name:var(--font-inter)] ${isAdminPage ? 'admin-panel' : ''}`}>
         {/* DEMO MODE BANNER */}
-        <div className="bg-secondary text-on-secondary text-center py-2 px-4 text-sm font-bold z-50 sticky top-0 uppercase tracking-widest shadow-md">
-          DEMO MODE - No real transactions are processed. Data is for demonstration only.
-        </div>
+        {process.env.NEXT_PUBLIC_DEMO_MODE !== 'false' && (
+          <div className="bg-secondary text-on-secondary text-center py-2 px-4 text-sm font-bold uppercase tracking-widest shadow-md">
+            DEMO MODE - No real transactions are processed. Data is for demonstration only.
+          </div>
+        )}
 
         
         {!isAdminPage && <Navbar user={user} adminRole={admin?.role} />}
