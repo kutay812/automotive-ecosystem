@@ -45,10 +45,6 @@ export default async function RootLayout({
       suppressHydrationWarning
       className={`${inter.variable} ${outfit.variable} h-full antialiased`}
     >
-      <head>
-        <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
-      </head>
-
       <body suppressHydrationWarning className={`min-h-full flex flex-col font-[family-name:var(--font-inter)] ${isAdminPage ? 'admin-panel' : ''}`}>
         {/* DEMO MODE BANNER */}
         {process.env.NEXT_PUBLIC_DEMO_MODE !== 'false' && (
