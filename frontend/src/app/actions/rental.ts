@@ -86,6 +86,14 @@ export async function getMyRentals(_userId?: string | number) {
 }
 
 export async function submitTestPayment(rentalId: string, transactionId: string) {
+  // Server action'lar dışarıdan çağrılabilir: yalnızca oturum sahibi kendi kiralamasını ödeyebilir.
+  const token = await getSession();
+  if (!token) return { error: 'Oturum gerekli.' };
+  const myRentals = await getMyRentals();
+  if (!Array.isArray(myRentals) || !myRentals.some((r: any) => r.documentId === rentalId)) {
+    return { error: 'Bu kiralama için ödeme yetkiniz yok.' };
+  }
+
   const payload = JSON.stringify({ rentalId, transactionId });
   const signature = crypto.createHmac('sha256', process.env.PAYMENT_WEBHOOK_SECRET || 'example-payment-secret-2026')
                           .update(payload).digest('hex');

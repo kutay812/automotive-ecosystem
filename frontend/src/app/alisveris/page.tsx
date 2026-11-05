@@ -6,15 +6,20 @@ export const metadata = {
   description: 'Example mağazalarındaki ürünlere göz atın. Trendyol, Hepsiburada ve N11 üzerinden doğrudan satın alın.',
 };
 
-export default async function AlisverisPage() {
-  const [items, categories] = await Promise.all([
+export default async function AlisverisPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string }>;
+}) {
+  const [items, categories, params] = await Promise.all([
     fetchPublicShopItems(),
     fetchShopCategories(),
+    searchParams,
   ]);
 
   return (
     <main className="min-h-screen relative">
-      <ShopShowcase items={items} categories={categories} />
+      <ShopShowcase items={items} categories={categories} initialQuery={params?.q || ''} />
     </main>
   );
 }

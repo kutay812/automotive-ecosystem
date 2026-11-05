@@ -31,7 +31,7 @@ export async function loginUser(prevState: any, formData: FormData) {
   if (data.jwt) {
     cookieStore.set('jwt', data.jwt, {
       httpOnly: true,
-      secure: false,
+      secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       path: '/',
       maxAge: 60 * 60 * 24 * 7 // 1 week
@@ -42,7 +42,7 @@ export async function loginUser(prevState: any, formData: FormData) {
   if (data.adminJwt) {
     cookieStore.set('admin_token', data.adminJwt, {
       httpOnly: true,
-      secure: false,
+      secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       path: '/',
       maxAge: 60 * 60 * 24 // 1 day
@@ -103,7 +103,7 @@ export async function registerUser(prevState: any, formData: FormData) {
   const cookieStore = await cookies();
   cookieStore.set('jwt', data.jwt, {
     httpOnly: true,
-    secure: false, // Localhost / Container testleri için false'a çekildi
+    secure: process.env.NODE_ENV === 'production', // Localhost / Container testleri için false'a çekildi
     sameSite: 'lax',
     path: '/',
     maxAge: 60 * 60 * 24 * 7
@@ -123,7 +123,7 @@ export async function setOauthSession(jwt: string, adminJwt?: string) {
   const cookieStore = await cookies();
   cookieStore.set('jwt', jwt, {
     httpOnly: true,
-    secure: false, // Localhost / Container testleri için false'a çekildi
+    secure: process.env.NODE_ENV === 'production', // Localhost / Container testleri için false'a çekildi
     sameSite: 'lax',
     path: '/',
     maxAge: 60 * 60 * 24 * 7
@@ -133,7 +133,7 @@ export async function setOauthSession(jwt: string, adminJwt?: string) {
   if (adminJwt) {
     cookieStore.set('admin_token', adminJwt, {
       httpOnly: true,
-      secure: false,
+      secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       path: '/',
       maxAge: 60 * 60 * 24

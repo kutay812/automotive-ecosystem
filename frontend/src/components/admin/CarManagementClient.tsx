@@ -188,17 +188,19 @@ export default function CarManagementClient({ cars: initialCars, offices = [] }:
             <div className="flex items-center gap-4">
               {carImageUrl ? (
                 <div className="relative w-32 h-20 rounded-lg overflow-hidden border border-[#ff5a00]/30 shadow-[0_0_10px_rgba(255,90,0,0.2)]">
-                  <img src={getMediaUrl(carImageUrl)} alt="Car Preview" className="w-full h-full object-cover" />
+                  <img src={getMediaUrl(carImageUrl)} alt="Araç görseli önizleme" className="w-full h-full object-cover" />
                   <button type="button" onClick={() => setCarImageUrl('')} className="absolute inset-0 bg-black/50 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center text-[10px] text-white">🔄 Değiştir</button>
                 </div>
               ) : (
-                <div 
+                <button
+                  type="button"
+                  aria-label="Araç görseli yükle"
                   onClick={() => fileInputRef.current?.click()}
                   className="w-32 h-20 border-2 border-dashed border-white/10 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-white/20 transition-all text-gray-500 hover:text-gray-400"
                 >
-                  <span className="text-xl">📸</span>
+                  <span className="text-xl" aria-hidden="true">📸</span>
                   <span className="text-[10px]">Yükle</span>
-                </div>
+                </button>
               )}
               <div className="flex-1">
                 <input 
@@ -258,7 +260,7 @@ export default function CarManagementClient({ cars: initialCars, offices = [] }:
                   <td className="p-4">
                     <div className="w-16 h-10 bg-black/40 rounded overflow-hidden flex items-center justify-center border border-white/5 group-hover:border-[#ff5a00]/30 transition-colors">
                       {car.image?.url || car.imageUrl ? (
-                        <img src={getMediaUrl(car.image?.url || car.imageUrl)} alt={car.brand} className="w-full h-full object-contain" />
+                        <img src={getMediaUrl(car.image?.url || car.imageUrl)} alt={`${car.brand} ${car.model || ''}`.trim()} className="w-full h-full object-contain" />
                       ) : (
                         <span className="text-xs text-gray-700">Görsel Yok</span>
                       )}
@@ -283,34 +285,40 @@ export default function CarManagementClient({ cars: initialCars, offices = [] }:
                     </span>
                   </td>
                   <td className="p-4 text-right">
-                    <div className="flex gap-2 justify-end opacity-60 group-hover:opacity-100 transition-opacity">
+                    <div className="flex gap-2 justify-end opacity-60 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
                       <button
+                        type="button"
                         onClick={() => handleEdit(car)}
                         title="Düzenle"
+                        aria-label={`${car.brand} ${car.model} düzenle`}
                         className="bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 px-3 py-1.5 rounded-lg text-xs border border-blue-500/30 transition-all"
                       >
-                        ✏️
+                        <span aria-hidden="true">✏️</span>
                       </button>
                       <button
+                        type="button"
                         onClick={() => handleToggleAvailability(car)}
                         title={car.isAvailable !== false ? 'Dolu Yap' : 'Müsait Yap'}
+                        aria-label={`${car.brand} ${car.model} ${car.isAvailable !== false ? 'dolu yap' : 'müsait yap'}`}
                         className="bg-white/5 hover:bg-white/10 text-white px-3 py-1.5 rounded-lg text-xs border border-white/10 transition-all"
                       >
-                        {car.isAvailable !== false ? '🔒' : '🔓'}
+                        <span aria-hidden="true">{car.isAvailable !== false ? '🔒' : '🔓'}</span>
                       </button>
                       <button
+                        type="button"
                         onClick={() => handleDelete(car)}
                         title="Sil"
+                        aria-label={`${car.brand} ${car.model} sil`}
                         className="bg-red-500/10 hover:bg-red-500/20 text-red-400 px-3 py-1.5 rounded-lg text-xs border border-red-500/30 transition-all font-bold"
                       >
-                        🗑️
+                        <span aria-hidden="true">🗑️</span>
                       </button>
                     </div>
                   </td>
                 </tr>
               ))}
               {initialCars.length === 0 && (
-                <tr><td colSpan={8} className="p-12 text-center text-gray-600">Henüz araç eklenmemiş.</td></tr>
+                <tr><td colSpan={9} className="p-12 text-center text-gray-600">Henüz araç eklenmemiş.</td></tr>
               )}
             </tbody>
           </table>

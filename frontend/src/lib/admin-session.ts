@@ -1,4 +1,6 @@
 import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
+import { jwtVerify } from 'jose/jwt/verify';
 
 export type AdminRole = 'superadmin' | 'admin' | 'editor';
 
@@ -10,6 +12,9 @@ export interface AdminUser {
   lastName: string;
   role: AdminRole;
 }
+
+const ADMIN_JWT_SECRET = process.env.ADMIN_JWT_SECRET || 'example-admin-jwt-secret-2026';
+const secretKey = new TextEncoder().encode(ADMIN_JWT_SECRET);
 
 export async function getAdminToken(): Promise<string | null> {
   const cookieStore = await cookies();
@@ -26,23 +31,23 @@ export async function getAdminUser(): Promise<AdminUser | null> {
   if (!token) return null;
 
   try {
-    // Decode JWT payload (base64) without verification — backend validates on each API call
-    const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+    // Kriptografik imza ve süre doğrulaması (HMAC SHA-256)
+    const { payload } = await jwtVerify(token, secretKey);
     if (!payload.adminId) return null;
     
-    // Rol bazlı ekstra güvenlik kontrolü
+    // Rol bazlı kontrol
     const ADMIN_ROLES: AdminRole[] = ['superadmin', 'admin', 'editor'];
-    if (!payload.role || !ADMIN_ROLES.includes(payload.role)) {
+    if (!payload.role || !ADMIN_ROLES.includes(payload.role as AdminRole)) {
       return null;
     }
     
     return {
-      id: payload.adminId,
-      documentId: payload.documentId,
-      email: payload.email,
-      firstName: payload.firstName || '',
-      lastName: payload.lastName || '',
-      role: payload.role,
+      id: Number(payload.adminId),
+      documentId: String(payload.documentId || ''),
+      email: String(payload.email || ''),
+      firstName: String(payload.firstName || ''),
+      lastName: String(payload.lastName || ''),
+      role: payload.role as AdminRole,
     };
   } catch {
     return null;
@@ -58,3 +63,19 @@ export function hasRole(user: AdminUser | null, ...roles: AdminRole[]): boolean 
 export function isSuperAdmin(user: AdminUser | null): boolean {
   return hasRole(user, 'superadmin');
 }
+
+/**
+ * Admin Sayfaları için Tekil Yetkilendirme Guard'ı.
+ * Oturumu ve rolleri doğrular; geçersizse login veya paneline yönlendirir.
+ */
+export async function requireAdminPage(...allowedRoles: AdminRole[]): Promise<AdminUser> {
+  const admin = await getAdminUser();
+  if (!admin) {
+    redirect('/admin/login');
+  }
+  if (allowedRoles.length > 0 && !hasRole(admin, ...allowedRoles)) {
+    redirect('/admin');
+  }
+  return admin;
+}
+

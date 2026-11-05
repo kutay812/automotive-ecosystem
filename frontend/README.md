@@ -1,36 +1,73 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# VisionArc - Frontend Web Uygulaması
 
-## Getting Started
+VisionArc platformunun son kullanıcı arayüzünü, kurumsal vitrinini ve yönetici panelini (Admin Dashboard) sunan Next.js 16 ve React 19 tabanlı modern web uygulaması.
 
-First, run the development server:
+---
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## 🛠️ Teknoloji Yığını
+
+- **Framework:** [Next.js 16.4.5](https://nextjs.org/) (App Router, Server Actions, Standalone Output)
+- **Kütüphane:** [React 19.3.1](https://react.dev/)
+- **Stil & Tasarım:** [Tailwind CSS v4](https://tailwindcss.com/), Google Fonts (Inter & Outfit), Material Symbols
+- **Animasyon:** [Framer Motion 12.43](https://www.framer.com/motion/)
+- **Yetkilendirme:** `jose` ile istemci/kenar katmanında HMAC-SHA256 JWT imza ve rol doğrulaması
+- **Yönlendirme & Güvenlik:** Next.js 16 `proxy.ts` (eski `middleware.ts` standardının yerini alan modern vekil katmanı)
+- **Durum & Hata Yönetimi:** Kurumsal Autoelite tasarım tokenları ile hazırlanmış `loading.tsx`, `not-found.tsx`, `error.tsx`, `global-error.tsx`
+- **Erişilebilirlik (a11y):** WCAG ve web.dev standartlarına uygun semantik etiketleme, ARIA rolleri, klavye ve ekran okuyucu desteği
+
+---
+
+## 📁 Dizin Yapısı
+
+```
+frontend/
+├── src/
+│   ├── app/               # App Router sayfaları, route handler'lar ve hata kabukları
+│   │   ├── (public)/      # Ana sayfa, /alisveris, /rentacar, /projelerimiz, /profil...
+│   │   ├── admin/         # Yönetici paneli ekranları (araclar, ofisler, muhasebe...)
+│   │   ├── actions/       # Server Actions (admin.ts, auth.ts, rental.ts)
+│   │   ├── api/           # Route handler'lar (Google OAuth callback vb.)
+│   │   ├── error.tsx      # Genel hata yakalayıcı
+│   │   ├── loading.tsx    # Yüklenme durumu (skeleton / spinner)
+│   │   └── not-found.tsx  # 404 sayfası
+│   ├── components/        # Yeniden kullanılabilir arayüz bileşenleri (Navbar, Hero, Modallar)
+│   │   └── admin/         # Yönetici kabuğu (AdminShell), tablolar ve yönetim bileşenleri
+│   ├── lib/               # API istemcisi, admin ve kullanıcı oturum yardımcıları
+│   ├── proxy.ts           # Next.js 16 rota vekil katmanı (yetki denetimi)
+│   └── __tests__/         # Otomatik JWT ve vekil güvenlik testleri
+├── public/                # Statik varlıklar ve görseller
+├── Dockerfile             # Multi-stage standalone üretim Dockerfile'ı
+└── package.json           # Bağımlılıklar ve scriptler
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 🚀 Geliştirme ve Çalıştırma
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 1. Bağımlılıkları Yükleyin
+```bash
+npm install
+```
 
-## Learn More
+### 2. Geliştirme Sunucusunu Başlatın
+```bash
+npm run dev
+```
+Uygulama varsayılan olarak `http://localhost:3000` adresinde çalışacaktır.
 
-To learn more about Next.js, take a look at the following resources:
+### 3. Üretim Derlemesi (Build)
+```bash
+npm run build
+```
+Next.js standalone çıktısı (`output: 'standalone'`) derlenir ve Docker imajı için optimize edilmiş hafif paket üretilir.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### 4. Testleri Çalıştırın
+```bash
+npm test
+```
+Admin oturum tokenlarının HMAC-SHA256 imza denetimini, sahte token engellemesini ve süre dolumu testlerini çalıştırır.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### 5. Lint Kontrolü
+```bash
+npm run lint
+```

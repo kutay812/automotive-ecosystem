@@ -1,13 +1,10 @@
-import { getAdminUser, hasRole } from '@/lib/admin-session';
-import { redirect } from 'next/navigation';
+import { requireAdminPage } from '@/lib/admin-session';
 import { fetchAdminRoles, fetchPermissions, fetchAdminUsers } from '@/app/actions/admin';
 import AdminShell from '@/components/admin/AdminShell';
 import RoleManagementClient from '@/components/admin/RoleManagementClient';
 
 export default async function RollerPage() {
-  const admin = await getAdminUser();
-  if (!admin) redirect('/admin/login');
-  if (!hasRole(admin, 'superadmin')) redirect('/admin');
+  const admin = await requireAdminPage('superadmin');
 
   const [roles, permData, users] = await Promise.all([
     fetchAdminRoles(),

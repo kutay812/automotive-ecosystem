@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { pool } from '../database/db';
-import { genDocId, now, formatCar, getEnrichedCars } from '../utils/helpers';
+import { requireRole } from '../middlewares/auth';
+import { genDocId, now, formatCar, getEnrichedCars, buildUpdateQuery } from '../utils/helpers';
 import { getCache, setCache, invalidateCache } from '../config/redis';
 
 export const carRouter = Router();
@@ -35,7 +36,7 @@ carRouter.get('/cars', async (req, res) => {
   }
 });
 
-carRouter.post('/cars', async (req, res) => {
+carRouter.post('/cars', requireRole('superadmin', 'admin', 'editor'), async (req, res) => {
   try {
     const d = req.body.data;
     const docId = genDocId();
@@ -54,27 +55,32 @@ carRouter.post('/cars', async (req, res) => {
   }
 });
 
-carRouter.put('/cars/:id', async (req, res) => {
+carRouter.put('/cars/:id', requireRole('superadmin', 'admin', 'editor'), async (req, res) => {
   try {
     const d = req.body.data;
-    const sets: string[] = [];
-    const vals: any[] = [];
-    let idx = 1;
-
-    const fields: any = {
-      brand: 'brand', model: 'model', year: 'year', pricePerDay: 'price_per_day',
-      description: 'description', isAvailable: 'is_available', transmission: 'transmission',
-      fuelType: 'fuel_type', passengerCount: 'passenger_count', luggageCount: 'luggage_count',
-      imageUrl: 'image_url', currentOfficeId: 'current_office_id',
+    const fieldsToUpdate: Record<string, any> = {
+      brand: d.brand,
+      model: d.model,
+      year: d.year,
+      price_per_day: d.pricePerDay,
+      description: d.description,
+      is_available: d.isAvailable,
+      transmission: d.transmission,
+      fuel_type: d.fuelType,
+      passenger_count: d.passengerCount,
+      luggage_count: d.luggageCount,
+      image_url: d.imageUrl,
+      current_office_id: d.currentOfficeId,
     };
 
-    for (const [key, col] of Object.entries(fields)) {
-      if (d[key] !== undefined) { sets.push(`${col} = $${idx}`); vals.push(d[key]); idx++; }
-    }
-    sets.push(`updated_at = $${idx}`); vals.push(now()); idx++;
-    vals.push(req.params.id);
+    const query = buildUpdateQuery(
+      'cars',
+      fieldsToUpdate,
+      'document_id =  OR id::text = ',
+      [req.params.id]
+    );
 
-    await pool.query(`UPDATE cars SET ${sets.join(', ')} WHERE document_id = $${idx} OR id::text = $${idx}`, vals);
+    await pool.query(query.text, query.values);
 
     await invalidateCache('cars:*');
 
@@ -84,7 +90,7 @@ carRouter.put('/cars/:id', async (req, res) => {
   }
 });
 
-carRouter.delete('/cars/:id', async (req, res) => {
+carRouter.delete('/cars/:id', requireRole('superadmin', 'admin', 'editor'), async (req, res) => {
   try {
     await pool.query('DELETE FROM cars WHERE document_id = $1 OR id::text = $1', [req.params.id]);
 

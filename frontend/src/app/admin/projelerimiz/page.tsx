@@ -1,13 +1,10 @@
-import { getAdminUser, hasRole } from '@/lib/admin-session';
-import { redirect } from 'next/navigation';
+import { requireAdminPage } from '@/lib/admin-session';
 import { fetchAdminProjects } from '@/app/actions/admin';
 import AdminShell from '@/components/admin/AdminShell';
 import ProjectManagementClient from '@/components/admin/ProjectManagementClient';
 
 export default async function ProjelerimizAdminPage() {
-  const admin = await getAdminUser();
-  if (!admin) redirect('/admin/login');
-  if (!hasRole(admin, 'superadmin', 'admin', 'editor')) redirect('/admin');
+  const admin = await requireAdminPage('superadmin', 'admin', 'editor');
 
   const projects = await fetchAdminProjects();
 

@@ -1,43 +1,46 @@
 # VisionArc - Kurumsal Ekosistem & Yönetim Platformu
 
-> E-ticaret, Araç Kiralama (Rent A Car) ve Prodüksiyon hizmetlerini tek bir yüksek performanslı mimaride birleştiren, kurumsal seviyede modern bir ekosistem yönetim platformu.
+> E-ticaret, Araç Kiralama (Rent A Car) ve Medya Prodüksiyon hizmetlerini tek bir yüksek performanslı mimaride birleştiren, kurumsal seviyede modern bir ekosistem yönetim platformu.
 
 ---
 
 ## 🚀 Temel Özellikler
 
 - **Çoklu Hizmet Mimarisi**: Tek bir uygulamadan Araç Kiralama, E-Ticaret Pazar Yeri ve Medya Prodüksiyon sektörlerine birleşik erişim.
-- **Yüksek Performanslı Araç Kiralama**: Müsaitlik kontrolü, anlık rezervasyon, süre uzatma, erken iade hesaplama ve ofis transferi.
-- **E-Ticaret & Pazaryeri Entegrasyonu**: Trendyol, Hepsiburada ve N11 yönlendirmeli dinamik ürün kataloglama ve filtreleme.
-- **Prodüksiyon & Medya Portfolyosu**: YouTube, Vimeo, Instagram, Facebook ve yerel video oynatma desteğine sahip medya vitrini.
-- **Kapsamlı Yönetici Paneli (Admin Dashboard)**: Kiralamalar, araç filosu, şubeler, kullanıcılar, roller & izinler, muhasebe/finans raporları ve destek talepleri yönetimi.
-- **Çok Katmanlı Önbellek & Yüksek Hız**: Redis önbellekleme ve Next.js 16 Tag-Based ISR ile milisaniyeler seviyesinde sayfa yüklenme hızı (0ms TTFB).
-- **Temiz & Modüler Mimari (Clean Architecture)**: N+1 sorgu darboğazları giderilmiş, B-Tree indeksli PostgreSQL ve Controller-Service katman ayrımı.
-- **Çoklu Ödeme Sağlayıcı Altyapısı**: Strategy Pattern ile tasarlanmış Iyzico, Stripe ve Test (Dummy) ödeme sağlayıcı desteği.
-- **Docker Desteği**: Tek komutla ayağa kaldırılabilen Production-ready Docker Compose mimarisi.
+- **Yüksek Performanslı Araç Kiralama**: Müsaitlik kontrolü, anlık rezervasyon, süre uzatma, erken iade hesaplama ve şube/ofis transferi.
+- **E-Ticaret & Pazaryeri Entegrasyonu**: Trendyol, Hepsiburada ve N11 yönlendirmeli dinamik ürün kataloglama, filtreleme ve arama.
+- **Prodüksiyon & Medya Portfolyosu**: YouTube ve yerel video oynatma desteğine sahip, klavye ve modal erişilebilir medya vitrini.
+- **Kapsamlı Yönetici Paneli (Admin Dashboard)**: Kiralamalar, araç filosu, şubeler, kullanıcılar, roller & izinler (RBAC), muhasebe/finans raporları ve destek talepleri yönetimi.
+- **Mobil Uyumlu Yönetim Arayüzü**: Tablet ve mobil ekranlar için açılır çekmece (slide-over drawer) yan menü desteği.
+- **Çok Katmanlı Önbellek & Yüksek Hız**: Redis önbellekleme (non-blocking `scanStream` ile temizleme) ve Next.js 16 Tag-Based ISR.
+- **Temiz & Modüler Mimari (Clean Architecture)**: Sıfır N+1 sorgu darboğazı, B-Tree indeksli PostgreSQL ve Controller-Service katman ayrımı.
+- **Çoklu Ödeme Sağlayıcı Altyapısı**: Strategy Pattern ile tasarlanmış Iyzico, Stripe ve HMAC doğrulamalı Test (Dummy) ödeme sağlayıcı desteği.
+- **Sertleştirilmiş Güvenlik (Hardened Security)**: Helmet HTTP başlıkları, güvenli çerez yapılandırması (`secure: true`), imza doğrulamalı JWT oturumları (`jose`), katı dosya yükleme uzantı ve boyut koruması.
+- **Konteynerizasyon**: Çok aşamalı (multi-stage) standalone Next.js ve yetkisiz (non-root) Express Docker Compose mimarisi.
 
 ---
 
 ## 🛠️ Teknoloji Yığını (Tech Stack)
 
 ### **Frontend:**
-- **Framework:** [Next.js 16](https://nextjs.org/) (App Router, Turbopack, Server Actions)
-- **Kütüphane:** [React 19](https://react.dev/)
-- **Stil & Tasarım:** [Tailwind CSS v4](https://tailwindcss.com/) (`@layer base`, `@layer components`, `@layer utilities`), Google Fonts (Inter & Outfit), Material Symbols
-- **Animasyon:** [Framer Motion](https://www.framer.com/motion/)
-- **Önbellekleme:** On-Demand Tag-Based ISR (`revalidateTag`, `revalidatePath`)
-- **Dil:** TypeScript
+- **Framework:** [Next.js 16.4.5](https://nextjs.org/) (App Router, Standalone Output, Server Actions)
+- **Kütüphane:** [React 19.3.1](https://react.dev/)
+- **Stil & Tasarım:** [Tailwind CSS v4.3.4](https://tailwindcss.com/), Google Fonts (Inter & Outfit), Material Symbols
+- **Animasyon:** [Framer Motion 12.43](https://www.framer.com/motion/)
+- **Yetkilendirme & Güvenlik:** `jose` (HMAC-SHA256 JWT doğrulama), `proxy.ts` (Next.js 16 standart vekil katmanı)
+- **Dil:** TypeScript 5 (Strict mod)
 
 ### **Backend:**
-- **Çalışma Ortamı:** [Node.js 22](https://nodejs.org/) & [Express](https://expressjs.com/) (TypeScript)
-- **Veritabanı:** [PostgreSQL 15](https://www.postgresql.org/) (B-Tree performans indeksleri ve connection pool koruması)
-- **Önbellek:** [Redis 7](https://redis.io/) (Read-Through Cache & Mutation-Driven Invalidation)
-- **Kimlik Doğrulama:** JWT (JSON Web Tokens), bcryptjs, Google OAuth 2.0
-- **E-posta:** Nodemailer (SMTP entegrasyonu)
+- **Çalışma Ortamı:** [Node.js 22 LTS](https://nodejs.org/) & [Express 4.21](https://expressjs.com/) (TypeScript)
+- **Veritabanı:** [PostgreSQL 15](https://www.postgresql.org/) (B-Tree indeksler ve bağlantı havuzu)
+- **Önbellek:** [Redis 7](https://redis.io/) (Non-blocking `scanStream` ile mutasyon bazlı temizleme)
+- **Güvenlik Başlıkları:** `helmet` 8.3
+- **Kimlik Doğrulama:** JWT, bcryptjs, Google OAuth 2.0
+- **E-posta:** Nodemailer 10.3.1 (SMTP entegrasyonu)
 
 ### **Altyapı & DevOps:**
-- **Reverse Proxy:** Nginx (API, Uploads ve Frontend ters vekil sunucusu)
-- **Konteynerizasyon:** Docker & Docker Compose
+- **Reverse Proxy:** Nginx (API, Uploads ve Frontend ters vekil sunucusu, `nosniff`, 200MB upload sınırı)
+- **Konteynerizasyon:** Docker & Docker Compose (Canlı ve Geliştirme ortamları)
 
 ---
 
@@ -50,55 +53,54 @@ graph TD
     Nginx -->|/*| Frontend["Next.js 16 Frontend (:3000)"]
     
     subgraph Backend_Architecture["Backend Katmanlı Mimari"]
-        Backend --> Middlewares["asyncHandler & errorHandler"]
-        Middlewares --> Routes["Modüler Routes (12 Route)"]
-        Routes --> Services["İş Mantığı Servisleri (RentalService vb.)"]
+        Backend --> Helmet["Helmet & Upload Guard"]
+        Helmet --> Middlewares["Auth (RBAC) & asyncHandler"]
+        Middlewares --> Routes["Modüler Rotalar (12 Route)"]
+        Routes --> Services["İş Mantığı Servisleri (RentalService, PaymentProvider)"]
         Services --> DB_Layer["PostgreSQL & B-Tree İndeksleri"]
-        Routes <--> Redis_Cache["Redis Önbellek (TTL & Event Invalidation)"]
+        Routes <--> Redis_Cache["Redis Önbellek (scanStream Invalidation)"]
     end
     
-    subgraph Frontend_Architecture["Frontend ISR Mimari"]
-        Frontend --> TagCache["Tag-Based ISR (cars, offices, shop, projects)"]
-        Frontend --> AdminFetch["DRY adminFetch<T> Server Actions"]
+    subgraph Frontend_Architecture["Frontend ISR & Proxy Mimari"]
+        Frontend --> Proxy["proxy.ts (Yetki & Yönlendirme)"]
+        Proxy --> TagCache["Tag-Based ISR (cars, offices, shop, projects)"]
+        Frontend --> AdminFetch["DRY adminFetch<T> & requireAdminPage"]
     end
 ```
 
 ### ⚡ Öne Çıkan Optimizasyonlar
-1. **Sıfır N+1 Darboğazı:** Kiralama ve araç listeleme sorguları tekil `LEFT JOIN` SQL sorgularına dönüştürüldü. 50 araçlık bir kiralama listesinde **351 veritabanı turu ➔ 1 tekil sorguya** düşürülerek gecikme %95+ azaltıldı.
+1. **Sıfır N+1 Darboğazı:** Kiralama ve araç listeleme sorguları tekil `LEFT JOIN` SQL sorgularına dönüştürüldü; gecikme %95+ azaltıldı.
 2. **PostgreSQL B-Tree İndeksleri:** Foreign key (`rental_id`, `car_id`, `user_id`), kiralama durumları, ofis ve araç müsaitlik filtrelerine indeksler eklendi.
-3. **Next.js 16 Tag-Based ISR:** Public sayfalardaki `cache: 'no-store'` yükü kaldırılarak `next: { tags: [...] }` yapısına geçildi; veriler güncellendiğinde `revalidateTag` ile anında tazelenmektedir.
-4. **CSS Spesifiklik Çözümü:** `globals.css` içerisindeki form stilleri `@layer base`, bileşenler `@layer components` katmanlarına taşınarak Tailwind sınıflarının ezilmesi engellendi.
-5. **DRY Server Actions:** [admin.ts](file:///c:/Users/kutay/OneDrive/Masa%C3%BCst%C3%BC/visionarc/frontend/src/app/actions/admin.ts) dosyasındaki 970 satırlık tekrarlı kod, merkezi ve tip güvenli `adminFetch<T>` yardımcısı ile sadeleştirildi.
-6. **Gereksiz Bağımlılık Temizliği:** Kullanılmayan Three.js, GSAP ve react-player kütüphaneleri kaldırılarak `node_modules`'ten 110 paket temizlendi, derleme süresi 3.7 saniyeye düşürüldü.
+3. **KVKK ve PII Koruması:** `GET /api/rentals` public uç noktası daraltılarak müşteri e-posta, telefon ve isim bilgileri kaldırıldı; yalnızca müsaitlik tarihleri dönecek hale getirildi.
+4. **Güvenli Dosya Yükleme:** RAM tükenmesini ve XSS saldırılarını önlemek için dosya boyutu sınırı (`MAX_UPLOAD_MB`) ve katı uzantı whitelist'i (`.jpg`, `.png`, `.webp`, `.mp4`, `.pdf` vb.) uygulandı.
+5. **Kriptografik Token Doğrulaması:** Frontend admin paneli geçişlerinde `jose` kütüphanesi ile HMAC-SHA256 imza kontrolü zorunlu kılındı.
+6. **Non-blocking Redis SCAN:** Tek iş parçacıklı Redis olay döngüsünü kitleyen `KEYS` çağrıları kaldırıldı; `scanStream` ile asenkron temizleme mimarisine geçildi.
 
 ---
 
 ## ⚡ Hızlı Kurulum (Docker ile)
 
-Sistemi çalıştırmanın en kolay yolu Docker Compose kullanmaktır.
+Sistemi çalıştırmanın en kolay ve güvenli yolu Docker Compose kullanmaktır.
 
-### 1. Projeyi Klonlayın
+### 1. Ortam Değişkenlerini Ayarlayın
+Kök dizindeki `.env.example` dosyasını kopyalayarak `.env` dosyanızı oluşturun:
 ```bash
-git clone https://github.com/kullaniciadiniz/visionarc.git
-cd visionarc
+cp .env.example .env
 ```
+Canlı ortama almadan önce `JWT_SECRET`, `ADMIN_JWT_SECRET`, `PAYMENT_WEBHOOK_SECRET` ve veritabanı şifrelerini güncelleyin.
 
-### 2. Ortam Değişkenlerini Ayarlayın
-`docker-compose.yml` varsayılan geliştirme ortamı ayarlarıyla hazır gelir. İsteğe bağlı olarak `.env` dosyası oluşturabilirsiniz:
-```bash
-cp backend/.env.example backend/.env
-```
-
-### 3. Konteynerleri Başlatın
+### 2. Canlı (Production) Modda Başlatma
 ```bash
 docker compose up -d --build
 ```
-
-Servisler hazır olduğunda:
 - **Web Uygulaması (Frontend):** `http://localhost:3000` veya Nginx üzerinden `http://localhost`
-- **Backend API:** `http://localhost:1337/api`
-- **PostgreSQL:** `localhost:5432`
-- **Redis:** `localhost:6379`
+- **Backend API:** `http://localhost:1337/api` (Sağlık kontrolü: `/api/health`)
+
+### 3. Geliştirme (Development Hot-Reload) Modunda Başlatma
+Kaynak kodu anlık olarak izlemek ve bağımlılıkları bağlamak için dev override dosyasını kullanın:
+```bash
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+```
 
 ### 4. Konteynerleri Durdurma
 ```bash
@@ -130,39 +132,58 @@ npm run dev
 
 ---
 
+## 🧪 Otomatik Testler
+
+Proje genelinde sıfır harici bağımlılıkla yerleşik `node:test` altyapısı kullanılmıştır.
+
+### Backend Güvenlik ve Regresyon Testleri:
+```bash
+cd backend
+npm test
+```
+- `/api/health` ve Helmet başlıkları
+- Sabit `?secret=` yetki bypass'ının engellenmesi (S1)
+- Yetkisiz `/api/cars` yazma koruması (S2)
+- `GET /api/rentals` PII gizlilik doğrulaması (S3)
+- Sahte ödeme webhook'u ve imza doğrulaması (S4)
+- Medya yükleme boyut ve uzantı whitelist kontrolü (S5)
+- `buildUpdateQuery` dinamik SQL enjeksiyon koruması
+
+### Frontend JWT ve Yetkilendirme Testleri:
+```bash
+cd frontend
+npm test
+```
+- Geçerli HMAC-SHA256 admin JWT imzasının doğrulanması
+- İmzası doğrulanmamış veya sahte base64 tokenların reddedilmesi
+- Süresi dolmuş tokenların engellenmesi
+
+---
+
 ## 🔒 Varsayılan Yönetici Girişi
 
-İlk kurulumda varsayılan bir Süper Yönetici (Super Admin) hesabı otomatik olarak tanımlanır:
+İlk kurulumda varsayılan Süper Yönetici hesabı tanımlanır:
 
 - **Panel Adresi:** `http://localhost:3000/admin/login`
 - **E-posta:** `admin@example.com`
 - **Şifre:** `admin123456`
 
 > [!IMPORTANT]
-> Güvenliğiniz için canlıya (production) almadan önce `backend/.env` içindeki `SA_PASSWORD` değerini değiştirin veya yönetim panelinden şifrenizi güncelleyin.
-
----
-
-## 🌐 Demo Modu Yapılandırması
-
-Uygulamanın en üstündeki demo bilgilendirme şeridini kapatmak için `frontend` ortam değişkenine şunu ekleyebilirsiniz:
-```env
-NEXT_PUBLIC_DEMO_MODE=false
-```
+> Güvenliğiniz için canlı ortama (production) almadan önce yönetim panelinden şifrenizi güncelleyin ve `.env` içerisindeki gizli anahtarları rastgele güçlü dizgilerle değiştirin.
 
 ---
 
 ## 💳 Ödeme Altyapısı (Payment Provider Pattern)
 
-Ödeme sağlayıcıları Strategy Pattern ile modüler olarak tasarlanmıştır ([PaymentProvider.ts](file:///c:/Users/kutay/OneDrive/Masa%C3%BCst%C3%BC/visionarc/backend/src/services/payment/PaymentProvider.ts)):
+Ödeme sağlayıcıları Strategy Pattern ile tek noktadan yönetilir (`PaymentProvider.ts`):
 
-1. **DummyProvider:** Test ortamları için güvenli simülasyon akışı.
-2. **IyzicoProvider:** Iyzico Checkout Form ve Webhook entegrasyonu.
-3. **StripeProvider:** Stripe Checkout Session ve Webhook entegrasyonu.
+1. **DummyProvider:** HMAC-SHA256 imzalı güvenli test akışı.
+2. **IyzicoProvider:** Iyzico API altyapısı için hazır iskelet (anahtarlar tanımlanana kadar güvenli şekilde kapalıdır).
+3. **StripeProvider:** Stripe Checkout altyapısı için hazır iskelet.
 
-Canlı ortamda sağlayıcıyı devreye almak için `backend/.env` dosyasına ilgili API anahtarlarını girmeniz yeterlidir:
+Aktif sağlayıcı sunucu ortam değişkeniyle (`PAYMENT_PROVIDER`) belirlenir:
 ```env
-PAYMENT_PROVIDER=iyzico # veya stripe / dummy
+PAYMENT_PROVIDER=dummy # veya stripe / iyzico
 PAYMENT_WEBHOOK_SECRET=guvenli-webhook-anahtariniz
 ```
 

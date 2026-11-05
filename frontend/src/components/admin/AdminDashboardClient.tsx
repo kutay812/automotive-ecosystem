@@ -46,7 +46,7 @@ export default function AdminDashboardClient({ stats, recentRentals: initialRent
     setCurrentStats(stats);
   }, [initialRentals, stats]);
 
-  const handleAction = async (action: Function, rentalId: string) => {
+  const handleAction = async (action: (id: string) => Promise<any>, rentalId: string) => {
     setActionLoading(rentalId);
     const res = await (action as any)(rentalId);
     setActionLoading(null);

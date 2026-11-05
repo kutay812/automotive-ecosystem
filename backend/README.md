@@ -1,61 +1,84 @@
-# 🚀 Getting started with Strapi
+# VisionArc - Backend API Servisi
 
-Strapi comes with a full featured [Command Line Interface](https://docs.strapi.io/dev-docs/cli) (CLI) which lets you scaffold and manage your project in seconds.
-
-### `develop`
-
-Start your Strapi application with autoReload enabled. [Learn more](https://docs.strapi.io/dev-docs/cli#strapi-develop)
-
-```
-npm run develop
-# or
-yarn develop
-```
-
-### `start`
-
-Start your Strapi application with autoReload disabled. [Learn more](https://docs.strapi.io/dev-docs/cli#strapi-start)
-
-```
-npm run start
-# or
-yarn start
-```
-
-### `build`
-
-Build your admin panel. [Learn more](https://docs.strapi.io/dev-docs/cli#strapi-build)
-
-```
-npm run build
-# or
-yarn build
-```
-
-## ⚙️ Deployment
-
-Strapi gives you many possible deployment options for your project including [Strapi Cloud](https://cloud.strapi.io). Browse the [deployment section of the documentation](https://docs.strapi.io/dev-docs/deployment) to find the best solution for your use case.
-
-```
-yarn strapi deploy
-```
-
-## 📚 Learn more
-
-- [Resource center](https://strapi.io/resource-center) - Strapi resource center.
-- [Strapi documentation](https://docs.strapi.io) - Official Strapi documentation.
-- [Strapi tutorials](https://strapi.io/tutorials) - List of tutorials made by the core team and the community.
-- [Strapi blog](https://strapi.io/blog) - Official Strapi blog containing articles made by the Strapi team and the community.
-- [Changelog](https://strapi.io/changelog) - Find out about the Strapi product updates, new features and general improvements.
-
-Feel free to check out the [Strapi GitHub repository](https://github.com/strapi/strapi). Your feedback and contributions are welcome!
-
-## ✨ Community
-
-- [Discord](https://discord.strapi.io) - Come chat with the Strapi community including the core team.
-- [Forum](https://forum.strapi.io/) - Place to discuss, ask questions and find answers, show your Strapi project and get feedback or just talk with other Community members.
-- [Awesome Strapi](https://github.com/strapi/awesome-strapi) - A curated list of awesome things related to Strapi.
+VisionArc ekosisteminin iş mantığını, kimlik doğrulama süreçlerini, kiralama yaşam döngüsünü ve veri depolamasını yöneten Express ve TypeScript tabanlı RESTful API servisi.
 
 ---
 
-<sub>🤫 Psst! [Strapi is hiring](https://strapi.io/careers).</sub>
+## 🛠️ Teknoloji Yığını
+
+- **Çalışma Ortamı & Dil:** Node.js 22 LTS, TypeScript 5.6
+- **Web Çatısı:** Express 4.21
+- **Veritabanı:** PostgreSQL 15 (Bağlantı havuzu `pg.Pool`, B-Tree indeksler)
+- **Önbellek & Kuyruk:** Redis 7 (`ioredis`, Non-blocking `scanStream` ile anahtar temizleme)
+- **Güvenlik & Sertleştirme:**
+  - `helmet` ile HTTP güvenlik başlıkları (nosniff, frameguard, CSP vb.)
+  - JWT (JSON Web Tokens) ile kullanıcı ve admin oturum yönetimi (HMAC-SHA256)
+  - `bcryptjs` ile parola hashleme
+  - Katı dosya yükleme denetimi (`uploadSizeGuard`, uzantı/MIME whitelist)
+  - Rol tabanlı yetkilendirme (RBAC: `superadmin`, `admin`, `editor`, `authenticated`)
+  - `express-rate-limit` ile istek sınırlama
+- **E-posta:** Nodemailer 10.3.1 (SMTP entegrasyonu)
+- **Test:** Node.js yerleşik test çalıştırıcısı (`node:test`, `tsx --test`)
+
+---
+
+## 📁 Dizin Yapısı
+
+```
+backend/
+├── src/
+│   ├── __tests__/         # Otomatik regresyon, güvenlik ve smoke testleri
+│   ├── config/            # Ortam değişkenleri (env.ts), Redis yapılandırması
+│   ├── database/          # PostgreSQL bağlantı havuzu ve veritabanı migrasyonları
+│   ├── middlewares/       # Auth (RBAC), errorHandler, asyncHandler, upload koruması
+│   ├── routes/            # Modüler REST API rotaları (car, rental, office, auth, shop...)
+│   ├── services/          # Kiralama servisleri ve ödeme sağlayıcı stratejileri (PaymentProvider)
+│   ├── utils/             # Güvenli dinamik SQL (buildUpdateQuery), JWT imzalama, formatlayıcılar
+│   ├── create-superadmin.ts # İlk kurulum yönetici oluşturma scripti
+│   └── index.ts           # Sunucu giriş noktası ve middleware montajı
+├── public/
+│   └── uploads/           # Yerel yüklenen medya dosyaları
+├── Dockerfile             # Multi-stage/non-root production Docker imajı
+├── tsconfig.json          # TypeScript derleme ayarları
+└── package.json           # Bağımlılıklar ve npm scriptleri
+```
+
+---
+
+## 🚀 Geliştirme ve Çalıştırma
+
+### Gereksinimler
+- Node.js 20+ ve npm
+- PostgreSQL 15+
+- Redis 7+
+
+### 1. Bağımlılıkları Yükleyin
+```bash
+npm install
+```
+
+### 2. Ortam Değişkenlerini Tanımlayın
+```bash
+cp .env.example .env
+```
+`.env` içerisindeki veritabanı, Redis ve JWT anahtarlarını yapılandırın.
+
+### 3. Geliştirme Sunucusunu Başlatın
+```bash
+npm run dev
+```
+Servis varsayılan olarak `http://localhost:1337` adresinde çalışacaktır. Sağlık kontrolü için `http://localhost:1337/api/health` adresini test edebilirsiniz.
+
+### 4. Testleri Çalıştırın
+```bash
+npm test
+```
+Express uygulamasını geçici bir HTTP portunda ayağa kaldırarak güvenlik, RBAC, PII sızıntı engeli ve dosya yükleme sınırlarını otomatik doğrular.
+
+---
+
+## 🔒 Güvenlik Standartları
+
+- **API Yetkilendirme:** Tüm yönetim uçları `requireRole('superadmin', 'admin', 'editor')` koruması altındadır.
+- **KVKK / PII Koruması:** `GET /api/rentals` genel uç noktası yalnızca müsaitlik takvimi alanlarını döndürür; hassas kullanıcı verisi içermez.
+- **Medya Yükleme Güvenliği:** `/api/admin/media/upload` ve `/api/admin/projects/upload` rotaları yalnızca izin verilen medya uzantılarını (`.jpg`, `.png`, `.webp`, `.mp4`, `.pdf` vb.) kabul eder. HTML, SVG veya script yüklemeleri doğrudan 400 ile engellenir.

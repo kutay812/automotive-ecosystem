@@ -15,7 +15,10 @@ export async function getUser() {
     const user = await fetchAPI('/api/users/me', {
       headers: {
         Authorization: `Bearer ${token}`
-      }
+      },
+      next: {
+        revalidate: 60, // 60 saniye önbellek: sayfa geçişlerinde backend'e mükerrer istekleri engeller
+      } as any,
     });
 
     if (user?.error) return null;

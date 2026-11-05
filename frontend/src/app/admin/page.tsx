@@ -1,17 +1,10 @@
-import { getAdminUser, hasRole } from '@/lib/admin-session';
-import { redirect } from 'next/navigation';
+import { requireAdminPage } from '@/lib/admin-session';
 import { fetchAdminStats, fetchAdminRentals, fetchAdminUsers, fetchAdminMedia } from '@/app/actions/admin';
 import AdminShell from '@/components/admin/AdminShell';
 import AdminDashboardClient from '@/components/admin/AdminDashboardClient';
 
 export default async function AdminDashboard() {
-  const admin = await getAdminUser();
-  if (!admin) redirect('/admin/login');
-  
-  // Dashboard superadmin, admin ve editor erişebilir
-  if (!hasRole(admin, 'superadmin', 'admin', 'editor')) {
-    redirect('/admin/login');
-  }
+  const admin = await requireAdminPage('superadmin', 'admin', 'editor');
 
   const [stats, rentals, users, media] = await Promise.all([
     fetchAdminStats(),

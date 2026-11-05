@@ -67,14 +67,27 @@ export default function HomepageShop({ items }: { items: ShopItem[] }) {
                   <h4 className="text-label-md text-primary mb-1 line-clamp-2">{item.title}</h4>
                   <div className="mt-auto flex justify-between items-center w-full pt-3">
                     <span className="text-headline-sm text-primary">₺{item.price?.toLocaleString('tr-TR')}</span>
-                    <a
-                      href={item.buy_link || '#'}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-8 h-8 rounded-full bg-surface-variant text-on-surface flex items-center justify-center hover:bg-secondary hover:text-on-secondary transition-colors"
-                    >
-                      <span className="material-symbols-outlined text-[18px]">add</span>
-                    </a>
+                    {item.buy_link ? (
+                      <a
+                        href={item.buy_link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title="Satın Al"
+                        aria-label={`${item.title} ürününü satın al`}
+                        className="w-8 h-8 rounded-full bg-surface-variant text-on-surface flex items-center justify-center hover:bg-secondary hover:text-on-secondary transition-colors"
+                      >
+                        <span aria-hidden="true" className="material-symbols-outlined text-[18px]">add</span>
+                      </a>
+                    ) : (
+                      <Link
+                        href="/alisveris"
+                        title="Mağazada İncele"
+                        aria-label={`${item.title} ürününü mağazada incele`}
+                        className="w-8 h-8 rounded-full bg-surface-variant text-on-surface flex items-center justify-center hover:bg-secondary hover:text-on-secondary transition-colors"
+                      >
+                        <span aria-hidden="true" className="material-symbols-outlined text-[18px]">add</span>
+                      </Link>
+                    )}
                   </div>
                 </div>
               </div>

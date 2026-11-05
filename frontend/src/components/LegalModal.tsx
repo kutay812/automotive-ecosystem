@@ -1,3 +1,6 @@
+'use client';
+
+import { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface LegalModalProps {
@@ -8,52 +11,70 @@ interface LegalModalProps {
 }
 
 export default function LegalModal({ isOpen, onClose, title, content }: LegalModalProps) {
-  if (!isOpen) return null;
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [isOpen, onClose]);
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          onClick={onClose}
-          className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-        />
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95, y: 20 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.95, y: 20 }}
-          className="relative w-full max-w-3xl bg-surface-container-lowest border border-outline-variant rounded-xl shadow-[0_4px_40px_rgba(0,0,0,0.15)] overflow-hidden flex flex-col max-h-[85vh] z-10"
+      {isOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="legal-modal-title"
+          className="fixed inset-0 z-50 flex items-center justify-center px-4"
         >
-          {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-outline-variant shrink-0">
-            <h2 className="text-headline-sm text-primary">{title}</h2>
-            <button
-              onClick={onClose}
-              className="text-on-surface-variant hover:text-primary transition-colors duration-300"
-            >
-              <span className="material-symbols-outlined">close</span>
-            </button>
-          </div>
-
-          {/* Body */}
-          <div 
-            className="p-6 overflow-y-auto text-body-md text-on-surface-variant space-y-4 leading-relaxed custom-scrollbar prose prose-sm max-w-none"
-            dangerouslySetInnerHTML={{ __html: content }}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            aria-hidden="true"
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
           />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            className="relative w-full max-w-3xl bg-surface-container-lowest border border-outline-variant rounded-xl shadow-[0_4px_40px_rgba(0,0,0,0.15)] overflow-hidden flex flex-col max-h-[85vh] z-10"
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b border-outline-variant shrink-0">
+              <h2 id="legal-modal-title" className="text-headline-sm text-primary">{title}</h2>
+              <button
+                type="button"
+                onClick={onClose}
+                aria-label="Kapat"
+                className="text-on-surface-variant hover:text-primary transition-colors duration-300"
+              >
+                <span aria-hidden="true" className="material-symbols-outlined">close</span>
+              </button>
+            </div>
 
-          {/* Footer */}
-          <div className="p-6 border-t border-outline-variant shrink-0 bg-surface-container-lowest flex justify-end">
-            <button
-              onClick={onClose}
-              className="px-6 py-2.5 btn-primary rounded-lg"
-            >
-              Anladım ve Kapat
-            </button>
-          </div>
-        </motion.div>
-      </div>
+            {/* Body */}
+            <div
+              className="p-6 overflow-y-auto text-body-md text-on-surface-variant space-y-4 leading-relaxed custom-scrollbar prose prose-sm max-w-none"
+              dangerouslySetInnerHTML={{ __html: content }}
+            />
+
+            {/* Footer */}
+            <div className="p-6 border-t border-outline-variant shrink-0 bg-surface-container-lowest flex justify-end">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-6 py-2.5 btn-primary rounded-lg"
+              >
+                Anladım ve Kapat
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </AnimatePresence>
   );
 }

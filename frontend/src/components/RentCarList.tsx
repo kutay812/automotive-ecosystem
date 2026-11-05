@@ -6,7 +6,6 @@ import { useState, useEffect } from 'react';
 import { createRental } from '@/app/actions/rental';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getMediaUrl } from '@/lib/api';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_STRAPI_URL || 'http://localhost:1337';
 
@@ -64,6 +63,15 @@ export default function RentCarList({ cars: initialCars, offices, activeRentals 
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [selectedCarForPayment, setSelectedCarForPayment] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (!paymentModalOpen) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setPaymentModalOpen(false);
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [paymentModalOpen]);
+
   const openPaymentModal = (carId: string) => {
     if (!pickupOffice || !dropoffOffice || !startDate || !endDate) {
       alert('Lütfen önce alış/teslim ofislerini ve tarihlerini seçin.');
@@ -106,8 +114,9 @@ export default function RentCarList({ cars: initialCars, offices, activeRentals 
       {/* Search / Filter Bar */}
       <div className="card p-6 md:p-8 mb-12 flex flex-col lg:flex-row gap-4 items-end">
         <div className="w-full lg:w-1/5">
-          <label className="block text-caption text-on-surface-variant mb-2 font-medium">Alış Ofisi</label>
+          <label htmlFor="rent-pickup-office" className="block text-caption text-on-surface-variant mb-2 font-medium">Alış Ofisi</label>
           <select
+            id="rent-pickup-office"
             value={pickupOffice}
             onChange={(e) => handlePickupOfficeChange(e.target.value)}
             className="w-full rounded-lg"
@@ -118,8 +127,9 @@ export default function RentCarList({ cars: initialCars, offices, activeRentals 
         </div>
 
         <div className="w-full lg:w-1/5">
-          <label className="block text-caption text-on-surface-variant mb-2 font-medium">Teslim Ofisi</label>
+          <label htmlFor="rent-dropoff-office" className="block text-caption text-on-surface-variant mb-2 font-medium">Teslim Ofisi</label>
           <select
+            id="rent-dropoff-office"
             value={dropoffOffice}
             onChange={(e) => setDropoffOffice(e.target.value)}
             className="w-full rounded-lg"
@@ -130,23 +140,25 @@ export default function RentCarList({ cars: initialCars, offices, activeRentals 
         </div>
 
         <div className="w-full lg:w-1/5">
-          <label className="block text-caption text-on-surface-variant mb-2 font-medium">Alış Tarihi</label>
+          <label htmlFor="rent-start-date" className="block text-caption text-on-surface-variant mb-2 font-medium">Alış Tarihi</label>
           <input
+            id="rent-start-date"
             type="date" min={todayStr} value={startDate} onChange={(e) => handleStartDateChange(e.target.value)}
             className="w-full rounded-lg"
           />
         </div>
 
         <div className="w-full lg:w-1/5">
-          <label className="block text-caption text-on-surface-variant mb-2 font-medium">Teslim Tarihi</label>
+          <label htmlFor="rent-end-date" className="block text-caption text-on-surface-variant mb-2 font-medium">Teslim Tarihi</label>
           <input
+            id="rent-end-date"
             type="date" min={getMinEndDate(startDate)} value={endDate} onChange={(e) => setEndDate(e.target.value)}
             className="w-full rounded-lg"
           />
         </div>
 
         <div className="w-full lg:w-1/5">
-          <div className="flex items-center justify-center h-[46px] text-label-md text-on-surface-variant bg-surface-container rounded-lg border border-outline-variant">
+          <div role="status" aria-live="polite" className="flex items-center justify-center h-[46px] text-label-md text-on-surface-variant bg-surface-container rounded-lg border border-outline-variant">
             {carsLoading
               ? <span className="animate-pulse text-secondary">Araçlar yükleniyor...</span>
               : <span>{cars.length} araç bulundu</span>
@@ -270,21 +282,30 @@ export default function RentCarList({ cars: initialCars, offices, activeRentals 
       {/* Payment Method Modal */}
       <AnimatePresence>
         {paymentModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/40 backdrop-blur-sm">
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/40 backdrop-blur-sm"
+            onClick={() => setPaymentModalOpen(false)}
+          >
             <motion.div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="payment-modal-title"
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
+              onClick={(e) => e.stopPropagation()}
               className="bg-surface-container-lowest border border-outline-variant rounded-xl p-8 max-w-md w-full shadow-[0_4px_40px_rgba(0,0,0,0.15)] relative"
             >
               <button
+                type="button"
+                aria-label="Kapat"
                 onClick={() => setPaymentModalOpen(false)}
                 className="absolute top-4 right-4 text-on-surface-variant hover:text-primary transition-colors duration-300"
               >
-                <span className="material-symbols-outlined">close</span>
+                <span className="material-symbols-outlined" aria-hidden="true">close</span>
               </button>
               
-              <h3 className="text-headline-md text-primary mb-2">Ödeme Yöntemi</h3>
+              <h3 id="payment-modal-title" className="text-headline-md text-primary mb-2">Ödeme Yöntemi</h3>
               <p className="text-body-md text-on-surface-variant mb-8">Lütfen aracı kiralama işlemini tamamlamak için bir ödeme yöntemi seçin.</p>
               
               <div className="flex flex-col gap-4">

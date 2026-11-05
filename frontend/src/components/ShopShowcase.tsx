@@ -47,8 +47,8 @@ const categoryIcons: Record<string, string> = {
   "Oto Aksesuar": "cable"
 };
 
-export default function ShopShowcase({ items }: { items: ShopItem[]; categories?: string[] }) {
-  const [searchQuery, setSearchQuery] = useState('');
+export default function ShopShowcase({ items, initialQuery = '' }: { items: ShopItem[]; categories?: string[]; initialQuery?: string }) {
+  const [searchQuery, setSearchQuery] = useState(initialQuery);
   const [selectedBrand, setSelectedBrand] = useState('all');
   const [selectedModel, setSelectedModel] = useState('all');
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -117,21 +117,24 @@ export default function ShopShowcase({ items }: { items: ShopItem[]; categories?
         {/* Global Search Bar */}
         <div className="max-w-3xl mx-auto mb-10 relative">
           <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
-            <span className="material-symbols-outlined text-outline">search</span>
+            <span aria-hidden="true" className="material-symbols-outlined text-outline">search</span>
           </div>
           <input
-            type="text"
+            type="search"
+            aria-label="Parça adı, OEM kodu veya kategori ara"
             placeholder="Parça adı, OEM kodu veya kategori ara..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-12 pr-4 py-4 rounded-xl border border-outline-variant bg-surface text-on-surface text-body-lg focus:border-secondary transition-all shadow-sm"
+            className="w-full pl-12 pr-10 py-4 rounded-xl border border-outline-variant bg-surface text-on-surface text-body-lg focus:border-secondary transition-all shadow-sm"
           />
           {searchQuery && (
             <button
+              type="button"
               onClick={() => setSearchQuery('')}
+              aria-label="Aramayı temizle"
               className="absolute inset-y-0 right-4 flex items-center text-outline hover:text-on-surface-variant"
             >
-              <span className="material-symbols-outlined">close</span>
+              <span aria-hidden="true" className="material-symbols-outlined">close</span>
             </button>
           )}
         </div>
@@ -141,8 +144,9 @@ export default function ShopShowcase({ items }: { items: ShopItem[]; categories?
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             
             <div className="flex flex-col gap-1">
-              <label className="text-caption text-on-surface-variant font-medium">Satıcı Platform</label>
+              <label htmlFor="shop-filter-platform" className="text-caption text-on-surface-variant font-medium">Satıcı Platform</label>
               <select 
+                id="shop-filter-platform"
                 value={selectedPlatform} 
                 onChange={e => setSelectedPlatform(e.target.value)}
                 className="rounded-lg bg-surface border-outline-variant"
@@ -154,8 +158,9 @@ export default function ShopShowcase({ items }: { items: ShopItem[]; categories?
             </div>
 
             <div className="flex flex-col gap-1">
-              <label className="text-caption text-on-surface-variant font-medium">Araç Markası</label>
+              <label htmlFor="shop-filter-brand" className="text-caption text-on-surface-variant font-medium">Araç Markası</label>
               <select 
+                id="shop-filter-brand"
                 value={selectedBrand} 
                 onChange={e => { setSelectedBrand(e.target.value); setSelectedModel('all'); }}
                 className="rounded-lg bg-surface border-outline-variant"
@@ -168,8 +173,9 @@ export default function ShopShowcase({ items }: { items: ShopItem[]; categories?
             </div>
 
             <div className="flex flex-col gap-1">
-              <label className="text-caption text-on-surface-variant font-medium">Araç Modeli</label>
+              <label htmlFor="shop-filter-model" className="text-caption text-on-surface-variant font-medium">Araç Modeli</label>
               <select 
+                id="shop-filter-model"
                 value={selectedModel} 
                 onChange={e => setSelectedModel(e.target.value)}
                 disabled={selectedBrand === 'all' || currentBrandModels.length === 0}
@@ -183,8 +189,9 @@ export default function ShopShowcase({ items }: { items: ShopItem[]; categories?
             </div>
 
             <div className="flex flex-col gap-1">
-              <label className="text-caption text-on-surface-variant font-medium">Kategori</label>
+              <label htmlFor="shop-filter-category" className="text-caption text-on-surface-variant font-medium">Kategori</label>
               <select 
+                id="shop-filter-category"
                 value={selectedCategory} 
                 onChange={e => { setSelectedCategory(e.target.value); setSelectedSubCategory('all'); }}
                 className="rounded-lg bg-surface border-outline-variant"
@@ -197,8 +204,9 @@ export default function ShopShowcase({ items }: { items: ShopItem[]; categories?
             </div>
 
             <div className="flex flex-col gap-1">
-              <label className="text-caption text-on-surface-variant font-medium">Alt Kategori</label>
+              <label htmlFor="shop-filter-subcategory" className="text-caption text-on-surface-variant font-medium">Alt Kategori</label>
               <select 
+                id="shop-filter-subcategory"
                 value={selectedSubCategory} 
                 onChange={e => setSelectedSubCategory(e.target.value)}
                 disabled={selectedCategory === 'all' || currentSubCategories.length === 0}
@@ -299,8 +307,9 @@ export default function ShopShowcase({ items }: { items: ShopItem[]; categories?
                             rel="noopener noreferrer"
                             className="w-10 h-10 rounded-full bg-surface-variant text-on-surface flex items-center justify-center hover:bg-secondary hover:text-on-secondary transition-colors"
                             title="Satın Al"
+                            aria-label={`${item.title} ürününü satın al`}
                           >
-                            <span className="material-symbols-outlined text-[20px]">shopping_cart</span>
+                            <span aria-hidden="true" className="material-symbols-outlined text-[20px]">shopping_cart</span>
                           </a>
                         ) : (
                           <span className="text-caption text-outline">Link yok</span>

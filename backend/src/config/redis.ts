@@ -33,10 +33,12 @@ redis.on('error', (err) => {
   isConnected = false;
 });
 
-// Otomatik bağlanmayı dene
-redis.connect().catch(() => {
-  console.log('ℹ️ Redis sunucusuna bağlanılamadı. Uygulama önbelleksiz doğrudan veritabanı modunda çalışmaya devam ediyor.');
-});
+// Otomatik bağlanmayı dene (test ortamında dış soket açma)
+if (process.env.NODE_ENV !== 'test') {
+  redis.connect().catch(() => {
+    console.log('ℹ️ Redis sunucusuna bağlanılamadı. Uygulama önbelleksiz doğrudan veritabanı modunda çalışmaya devam ediyor.');
+  });
+}
 
 export async function getCache<T = any>(key: string): Promise<T | null> {
   if (!isConnected) return null;
@@ -63,9 +65,19 @@ export async function invalidateCache(...keysOrPrefixes: string[]): Promise<void
   try {
     for (const item of keysOrPrefixes) {
       if (item.endsWith('*')) {
-        const keys = await redis.keys(item);
-        if (keys.length > 0) {
-          await redis.del(...keys);
+        // Bloklamayan non-blocking SCAN akışı ile anahtarları toplu temizle
+        const stream = redis.scanStream({
+          match: item,
+          count: 100,
+        });
+        const matchedKeys: string[] = [];
+        for await (const resultKeys of stream) {
+          if (Array.isArray(resultKeys) && resultKeys.length > 0) {
+            matchedKeys.push(...resultKeys);
+          }
+        }
+        if (matchedKeys.length > 0) {
+          await redis.del(...matchedKeys);
         }
       } else {
         await redis.del(item);

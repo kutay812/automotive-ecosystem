@@ -284,3 +284,42 @@ export async function formatRental(row: any): Promise<any> {
 
   return mapEnrichedRentalRow(row);
 }
+
+/**
+ * Dinamik SQL UPDATE sorgusu ve parametre dizisi oluşturan güvenli yardımcı fonksiyon.
+ */
+export function buildUpdateQuery(
+  tableName: string,
+  fields: Record<string, any>,
+  whereClause: string,
+  whereParams: any[] = []
+): { text: string; values: any[] } {
+  const sets: string[] = ['updated_at = $1'];
+  const values: any[] = [now()];
+  let idx = 2;
+
+  for (const [col, val] of Object.entries(fields)) {
+    if (val !== undefined) {
+      if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(col)) {
+        throw new Error(`Geçersiz sütun adı: ${col}`);
+      }
+      sets.push(`${col} = $${idx}`);
+      values.push(val);
+      idx++;
+    }
+  }
+
+  let adjustedWhere = whereClause;
+  for (let i = 0; i < whereParams.length; i++) {
+    const oldPlaceholder = `$${i + 1}`;
+    const newPlaceholder = `$${idx + i}`;
+    adjustedWhere = adjustedWhere.replaceAll(oldPlaceholder, newPlaceholder);
+  }
+  values.push(...whereParams);
+
+  return {
+    text: `UPDATE ${tableName} SET ${sets.join(', ')} WHERE ${adjustedWhere}`,
+    values,
+  };
+}
+

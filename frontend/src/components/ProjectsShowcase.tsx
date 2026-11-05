@@ -18,7 +18,12 @@ function MediaPlayer({ project, autoplay = false, className = '' }: { project: a
 
     if (!playing) {
       return (
-        <div className={`relative cursor-pointer group/play ${className}`} onClick={() => setPlaying(true)}>
+        <button
+          type="button"
+          aria-label={`${project.title} videosunu oynat`}
+          className={`relative cursor-pointer group/play text-left block ${className}`}
+          onClick={(e) => { e.stopPropagation(); setPlaying(true); }}
+        >
           <img
             src={`https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`}
             alt={project.title}
@@ -27,15 +32,16 @@ function MediaPlayer({ project, autoplay = false, className = '' }: { project: a
           />
           <div className="absolute inset-0 bg-black/10 group-hover/play:bg-black/20 transition-colors duration-500 flex items-center justify-center">
             <div className="w-16 h-16 bg-secondary rounded-full flex items-center justify-center shadow-lg group-hover/play:scale-110 transition-transform duration-300">
-              <span className="material-symbols-outlined text-[32px] text-white">play_arrow</span>
+              <span className="material-symbols-outlined text-[32px] text-white" aria-hidden="true">play_arrow</span>
             </div>
           </div>
-        </div>
+        </button>
       );
     }
     return (
       <iframe
         src={`https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0`}
+        title={project.title || 'YouTube video oynatıcı'}
         className={className} frameBorder="0"
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
         allowFullScreen
@@ -152,6 +158,9 @@ function ProjectDetailModal({ project, onClose }: { project: any; onClose: () =>
 
       {/* Modal */}
       <motion.div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="project-modal-title"
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -161,10 +170,12 @@ function ProjectDetailModal({ project, onClose }: { project: any; onClose: () =>
       >
         {/* Close Button */}
         <button
+          type="button"
+          aria-label="Kapat"
           onClick={onClose}
           className="absolute top-4 right-4 z-50 w-10 h-10 bg-surface/80 backdrop-blur-md border border-outline-variant rounded-full flex items-center justify-center text-on-surface hover:text-primary transition-all duration-300 shadow-sm"
         >
-          <span className="material-symbols-outlined">close</span>
+          <span className="material-symbols-outlined" aria-hidden="true">close</span>
         </button>
 
         {/* Scrollable content */}
@@ -182,7 +193,7 @@ function ProjectDetailModal({ project, onClose }: { project: any; onClose: () =>
                 {project.category}
               </span>
               <span className="chip bg-surface border-outline-variant text-on-surface-variant flex items-center gap-1">
-                <span className="material-symbols-outlined text-[14px]">
+                <span className="material-symbols-outlined text-[14px]" aria-hidden="true">
                   {project.mediaType === 'youtube' || project.mediaType === 'mp4' ? 'play_circle' : 'image'}
                 </span>
                 {project.mediaType === 'youtube' ? 'YouTube Video' : project.mediaType === 'mp4' ? 'MP4 Video' : 'Görsel'}
@@ -190,7 +201,7 @@ function ProjectDetailModal({ project, onClose }: { project: any; onClose: () =>
             </div>
 
             {/* Title */}
-            <h2 className="text-display-sm text-primary font-black">
+            <h2 id="project-modal-title" className="text-display-sm text-primary font-black">
               {project.title}
             </h2>
 

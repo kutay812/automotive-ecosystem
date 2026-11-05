@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { logoutUser } from '@/app/actions/auth';
 import ContactModal from './ContactModal';
 
@@ -12,6 +12,15 @@ export default function Navbar({ user, adminRole }: { user?: any; adminRole?: st
   const [isContactOpen, setIsContactOpen] = useState(false);
 
   const showAdminLink = adminRole && ADMIN_ROLES.includes(adminRole);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsOpen(false);
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [isOpen]);
 
   return (
     <>
@@ -39,8 +48,13 @@ export default function Navbar({ user, adminRole }: { user?: any; adminRole?: st
           <div className="flex gap-4 items-center text-primary">
             {user ? (
               <>
-                <Link href="/profile" className="hover:text-secondary transition-colors duration-200" title="Profilim">
-                  <span className="material-symbols-outlined">account_circle</span>
+                <Link
+                  href="/profile"
+                  className="hover:text-secondary transition-colors duration-200"
+                  title="Profilim"
+                  aria-label="Profilim"
+                >
+                  <span aria-hidden="true" className="material-symbols-outlined">account_circle</span>
                 </Link>
                 {showAdminLink && (
                   <Link
@@ -55,8 +69,9 @@ export default function Navbar({ user, adminRole }: { user?: any; adminRole?: st
                     type="submit"
                     className="hover:text-secondary transition-colors duration-200"
                     title="Çıkış Yap"
+                    aria-label="Çıkış Yap"
                   >
-                    <span className="material-symbols-outlined">logout</span>
+                    <span aria-hidden="true" className="material-symbols-outlined">logout</span>
                   </button>
                 </form>
               </>
@@ -66,67 +81,80 @@ export default function Navbar({ user, adminRole }: { user?: any; adminRole?: st
                   onClick={() => setIsContactOpen(true)}
                   className="hover:text-secondary transition-colors duration-200"
                   title="İletişim"
+                  aria-label="İletişim Formunu Aç"
                 >
-                  <span className="material-symbols-outlined">mail</span>
+                  <span aria-hidden="true" className="material-symbols-outlined">mail</span>
                 </button>
-                <Link href="/login" className="hover:text-secondary transition-colors duration-200" title="Giriş Yap">
-                  <span className="material-symbols-outlined">account_circle</span>
+                <Link
+                  href="/login"
+                  className="hover:text-secondary transition-colors duration-200"
+                  title="Giriş Yap"
+                  aria-label="Giriş Yap"
+                >
+                  <span aria-hidden="true" className="material-symbols-outlined">account_circle</span>
                 </Link>
               </>
             )}
 
             {/* Mobile Menu Toggle */}
             <button
+              type="button"
               className="md:hidden hover:text-secondary transition-colors duration-200"
               onClick={() => setIsOpen(!isOpen)}
+              aria-expanded={isOpen}
+              aria-controls="mobile-nav-menu"
+              aria-label={isOpen ? 'Menüyü Kapat' : 'Menüyü Aç'}
             >
-              <span className="material-symbols-outlined">
+              <span aria-hidden="true" className="material-symbols-outlined">
                 {isOpen ? 'close' : 'menu'}
               </span>
             </button>
           </div>
         </div>
-      </nav>
 
-      {/* Mobile Menu */}
-      {isOpen && (
-        <div className="md:hidden fixed inset-0 top-[104px] bg-background z-40 border-t border-outline-variant">
-          <div className="flex flex-col p-6 gap-6">
-            <Link href="/rentacar" onClick={() => setIsOpen(false)} className="text-headline-sm text-primary hover:text-secondary transition-colors">
-              Kiralama
-            </Link>
-            <Link href="/alisveris" onClick={() => setIsOpen(false)} className="text-headline-sm text-primary hover:text-secondary transition-colors">
-              Mağaza
-            </Link>
-            <Link href="/production" onClick={() => setIsOpen(false)} className="text-headline-sm text-primary hover:text-secondary transition-colors">
-              Medya
-            </Link>
-            <div className="border-t border-outline-variant pt-6">
-              {user ? (
-                <div className="flex flex-col gap-4">
-                  <Link href="/profile" onClick={() => setIsOpen(false)} className="text-body-lg text-on-surface-variant hover:text-secondary transition-colors">
-                    Merhaba, {user.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : user.username}
-                  </Link>
-                  {showAdminLink && (
-                    <Link href="/admin" onClick={() => setIsOpen(false)} className="btn-cta text-center">
-                      🛡️ Yönetim Paneli
+        {/* Mobile Menu (anchored directly below sticky nav, no gap regardless of banner/scroll) */}
+        {isOpen && (
+          <div
+            id="mobile-nav-menu"
+            className="md:hidden absolute top-full inset-x-0 max-h-[calc(100dvh-4rem)] overflow-y-auto bg-background border-b border-outline-variant shadow-lg z-40"
+          >
+            <div className="flex flex-col p-6 gap-6">
+              <Link href="/rentacar" onClick={() => setIsOpen(false)} className="text-headline-sm text-primary hover:text-secondary transition-colors">
+                Kiralama
+              </Link>
+              <Link href="/alisveris" onClick={() => setIsOpen(false)} className="text-headline-sm text-primary hover:text-secondary transition-colors">
+                Mağaza
+              </Link>
+              <Link href="/production" onClick={() => setIsOpen(false)} className="text-headline-sm text-primary hover:text-secondary transition-colors">
+                Medya
+              </Link>
+              <div className="border-t border-outline-variant pt-6">
+                {user ? (
+                  <div className="flex flex-col gap-4">
+                    <Link href="/profile" onClick={() => setIsOpen(false)} className="text-body-lg text-on-surface-variant hover:text-secondary transition-colors">
+                      Merhaba, {user.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : user.username}
                     </Link>
-                  )}
-                </div>
-              ) : (
-                <div className="flex flex-col gap-4">
-                  <Link href="/login" onClick={() => setIsOpen(false)} className="btn-primary text-center">
-                    Giriş Yap
-                  </Link>
-                  <Link href="/register" onClick={() => setIsOpen(false)} className="btn-secondary text-center">
-                    Kayıt Ol
-                  </Link>
-                </div>
-              )}
+                    {showAdminLink && (
+                      <Link href="/admin" onClick={() => setIsOpen(false)} className="btn-cta text-center">
+                        🛡️ Yönetim Paneli
+                      </Link>
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-4">
+                    <Link href="/login" onClick={() => setIsOpen(false)} className="btn-primary text-center py-3 rounded-lg">
+                      Giriş Yap
+                    </Link>
+                    <Link href="/register" onClick={() => setIsOpen(false)} className="btn-secondary text-center py-3 rounded-lg">
+                      Kayıt Ol
+                    </Link>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </nav>
 
       {/* Contact Modal */}
       <ContactModal isOpen={isContactOpen} onClose={() => setIsContactOpen(false)} />

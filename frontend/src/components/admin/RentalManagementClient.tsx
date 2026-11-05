@@ -36,7 +36,7 @@ export default function RentalManagementClient({ rentals: initialRentals }: { re
       ? initialRentals.filter((r: any) => r.approvalStatus === 'waiting_admin')
       : initialRentals.filter((r: any) => r.rentalStatus === filter);
 
-  const handleAction = async (action: Function, rentalId: string) => {
+  const handleAction = async (action: (id: string) => Promise<any>, rentalId: string) => {
     setActionLoading(rentalId);
     const res = await (action as any)(rentalId);
     setActionLoading(null);

@@ -1,13 +1,10 @@
-import { getAdminUser, hasRole } from '@/lib/admin-session';
-import { redirect } from 'next/navigation';
+import { requireAdminPage } from '@/lib/admin-session';
 import { fetchSupportTickets } from '@/app/actions/admin';
 import AdminShell from '@/components/admin/AdminShell';
 import SupportManagementClient from '@/components/admin/SupportManagementClient';
 
 export default async function AdminSupportPage() {
-  const admin = await getAdminUser();
-  if (!admin) redirect('/admin/login');
-  if (!hasRole(admin, 'superadmin', 'admin')) redirect('/admin');
+  const admin = await requireAdminPage('superadmin', 'admin');
 
   const tickets = await fetchSupportTickets();
 

@@ -2,8 +2,18 @@
 
 import { motion } from 'framer-motion';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 
 export default function Hero() {
+  const router = useRouter();
+  const [query, setQuery] = useState('');
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = query.trim();
+    router.push(trimmed ? `/alisveris?q=${encodeURIComponent(trimmed)}` : '/alisveris');
+  };
   return (
     <section className="relative w-full min-h-[80vh] bg-primary-container flex flex-col justify-center overflow-hidden">
       {/* Background Image */}
@@ -34,24 +44,32 @@ export default function Hero() {
           </p>
 
           {/* Search Bar */}
-          <motion.div
+          <motion.form
+            onSubmit={handleSearch}
+            role="search"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3, duration: 0.6 }}
             className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-2 flex flex-col md:flex-row gap-2 w-full max-w-3xl shadow-[0_4px_20px_rgba(26,26,26,0.2)]"
           >
             <div className="flex-1 flex items-center bg-white/10 rounded-lg px-4 py-2 border border-white/10">
-              <span className="material-symbols-outlined text-outline mr-3">search</span>
+              <span aria-hidden="true" className="material-symbols-outlined text-outline mr-3">search</span>
               <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                aria-label="Marka, model veya parça ara"
                 className="w-full bg-transparent border-none text-on-primary placeholder:text-outline focus:ring-0 focus:outline-none text-body-md px-0"
                 placeholder="Marka, model veya parça ara..."
-                type="text"
+                type="search"
               />
             </div>
-            <button className="bg-secondary text-on-secondary px-8 py-2 rounded-lg text-label-md hover:bg-secondary-container transition-colors shadow-sm">
+            <button
+              type="submit"
+              className="bg-secondary text-on-secondary px-8 py-2 rounded-lg text-label-md hover:bg-secondary-container transition-colors shadow-sm cursor-pointer"
+            >
               Hızlı Ara
             </button>
-          </motion.div>
+          </motion.form>
         </motion.div>
 
         {/* Service Cards */}

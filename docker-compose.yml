@@ -10,7 +10,8 @@ services:
     volumes:
       - postgres-data:/var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      # Sadece yerel erişim için 127.0.0.1'e bağla (dış dünyaya açık değil)
+      - "127.0.0.1:5432:5432"
     networks:
       - example-network
 
@@ -22,7 +23,8 @@ services:
     volumes:
       - redis-data:/data
     ports:
-      - "6379:6379"
+      # Sadece yerel erişim için 127.0.0.1'e bağla
+      - "127.0.0.1:6379:6379"
     networks:
       - example-network
 
@@ -36,6 +38,9 @@ services:
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
     networks:
       - example-network
+    depends_on:
+      - backend
+      - frontend
 
   backend:
     build:
@@ -44,24 +49,28 @@ services:
     container_name: example-backend
     restart: unless-stopped
     ports:
-      - "1337:1337"
+      - "127.0.0.1:1337:1337"
     environment:
+      - NODE_ENV=production
       - DATABASE_HOST=example-postgres
       - DATABASE_PORT=5432
       - DATABASE_NAME=${DATABASE_NAME:-example_db}
       - DATABASE_USERNAME=${DATABASE_USER:-example}
       - DATABASE_PASSWORD=${DATABASE_PASSWORD:-example_pwd}
-      - JWT_SECRET=example-jwt-secret-2026
-      - GOOGLE_CLIENT_ID=
-      - GOOGLE_CLIENT_SECRET=
-      - FRONTEND_URL=http://localhost:3000
+      - JWT_SECRET=${JWT_SECRET:-example-jwt-secret-2026}
+      - ADMIN_JWT_SECRET=${ADMIN_JWT_SECRET:-example-admin-jwt-secret-2026}
+      - PAYMENT_PROVIDER=${PAYMENT_PROVIDER:-dummy}
+      - PAYMENT_WEBHOOK_SECRET=${PAYMENT_WEBHOOK_SECRET:-example-payment-secret-2026}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
       - PORT=1337
       - REDIS_HOST=example-redis
       - REDIS_PORT=6379
       - REDIS_PASSWORD=${REDIS_PASSWORD:-example_redis}
     volumes:
-      - ./backend:/opt/app
-      - /opt/app/node_modules
+      # Medya yüklemeleri için kalıcı volume
+      - backend-uploads:/opt/app/public/uploads
     networks:
       - example-network
     depends_on:
@@ -75,17 +84,17 @@ services:
     container_name: example-frontend
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     environment:
-      - NODE_ENV=development
+      - NODE_ENV=production
       - INTERNAL_API_URL=http://example-backend:1337
-      - NEXT_PUBLIC_STRAPI_URL=http://localhost:1337
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-      - /app/.next
+      - NEXT_PUBLIC_STRAPI_URL=${NEXT_PUBLIC_STRAPI_URL:-http://localhost:1337}
+      - ADMIN_JWT_SECRET=${ADMIN_JWT_SECRET:-example-admin-jwt-secret-2026}
+      - PAYMENT_WEBHOOK_SECRET=${PAYMENT_WEBHOOK_SECRET:-example-payment-secret-2026}
     networks:
       - example-network
+    depends_on:
+      - backend
 
 networks:
   example-network:
@@ -94,3 +103,4 @@ networks:
 volumes:
   postgres-data:
   redis-data:
+  backend-uploads:

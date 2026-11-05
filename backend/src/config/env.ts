@@ -3,7 +3,6 @@ import nodemailer from 'nodemailer';
 export const PORT = parseInt(process.env.PORT || '1337');
 export const JWT_SECRET = process.env.JWT_SECRET || 'example-jwt-secret-2026';
 export const ADMIN_JWT_SECRET = process.env.ADMIN_JWT_SECRET || 'example-admin-jwt-secret-2026';
-export const ADMIN_SECRET = 'example-secret-google-123';
 
 export type AdminRole = 'superadmin' | 'admin' | 'editor';
 export const MANAGEABLE_ADMIN_ROLES: Exclude<AdminRole, 'superadmin'>[] = ['admin', 'editor'];

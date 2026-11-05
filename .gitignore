@@ -18,7 +18,8 @@ backend/dist/
 backend/build/
 
 # Uploads / Public media (optional to ignore if they contain sample files)
-# backend/public/uploads/
+backend/public/uploads/*
+!backend/public/uploads/.gitkeep
 
 # IDE / OS files
 .vscode/

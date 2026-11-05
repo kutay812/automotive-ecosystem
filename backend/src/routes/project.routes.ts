@@ -1,9 +1,9 @@
 import { Router } from 'express';
 import path from 'path';
 import fs from 'fs';
-import crypto from 'crypto';
 import { pool } from '../database/db';
 import { requireRole } from '../middlewares/auth';
+import { uploadSizeGuard, isAllowedUpload, parseMultipartUpload } from '../middlewares/upload';
 import { genDocId, now } from '../utils/helpers';
 import { getCache, setCache, invalidateCache } from '../config/redis';
 
@@ -99,59 +99,27 @@ projectRouter.put('/admin/projects/:id', requireRole('superadmin', 'admin', 'edi
 });
 
 // Admin: Proje dosyası yükle
-projectRouter.post('/admin/projects/upload', requireRole('superadmin', 'admin', 'editor'), async (req: any, res) => {
+projectRouter.post('/admin/projects/upload', requireRole('superadmin', 'admin', 'editor'), uploadSizeGuard, async (req: any, res) => {
   try {
-    const chunks: Buffer[] = [];
-    req.on('data', (chunk: Buffer) => chunks.push(chunk));
-    req.on('end', async () => {
-      try {
-        const body = Buffer.concat(chunks);
-        const contentType = req.headers['content-type'] || '';
+    const parsed = await parseMultipartUpload(req);
+    if (!isAllowedUpload(parsed.fileName)) {
+      return res.status(400).json({ error: { message: 'Desteklenmeyen dosya türü.' } });
+    }
 
-        const boundaryMatch = contentType.match(/boundary=(.+)/);
-        if (!boundaryMatch) return res.status(400).json({ error: { message: 'Geçersiz form verisi.' } });
+    const { safeName, storedName, fileBuffer } = parsed;
 
-        const boundary = boundaryMatch[1];
-        const parts = body.toString('binary').split(`--${boundary}`);
+    const uploadDir = path.join(__dirname, '../../public/uploads/projects');
+    if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+    fs.writeFileSync(path.join(uploadDir, storedName), fileBuffer);
 
-        let fileName = 'upload';
-        let fileBuffer: Buffer | null = null;
-
-        for (const part of parts) {
-          if (part.includes('Content-Disposition')) {
-            const filenameMatch = part.match(/filename="([^"]+)"/);
-            const headerEnd = part.indexOf('\r\n\r\n');
-            if (headerEnd === -1) continue;
-            const partBody = part.slice(headerEnd + 4).replace(/\r\n$/, '');
-
-            if (filenameMatch) {
-              fileName = filenameMatch[1];
-              fileBuffer = Buffer.from(partBody, 'binary');
-            }
-          }
-        }
-
-        if (!fileBuffer) return res.status(400).json({ error: { message: 'Dosya bulunamadı.' } });
-
-        const ext = path.extname(fileName);
-        const hash = crypto.randomBytes(8).toString('hex');
-        const safeName = fileName.replace(/[^a-zA-Z0-9._-]/g, '_');
-        const storedName = `${path.basename(safeName, ext)}_${hash}${ext}`;
-
-        const uploadDir = path.join(__dirname, '../../public/uploads/projects');
-        if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
-        fs.writeFileSync(path.join(uploadDir, storedName), fileBuffer);
-
-        res.json({
-          url: `/uploads/projects/${storedName}`,
-          name: safeName,
-        });
-      } catch (e: any) {
-        res.status(500).json({ error: { message: e.message } });
-      }
+    res.json({
+      url: `/uploads/projects/${storedName}`,
+      name: safeName,
     });
   } catch (e: any) {
-    res.status(500).json({ error: { message: e.message } });
+    if (res.headersSent) return;
+    const status = e?.message?.includes('Geçersiz form verisi') || e?.message?.includes('Dosya bulunamadı') ? 400 : 500;
+    res.status(status).json({ error: { message: e.message } });
   }
 });
 

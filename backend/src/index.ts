@@ -11,6 +11,7 @@ process.on('unhandledRejection', (reason: any) => {
 console.log('🏁 Backend süreci başlıyor...');
 
 import express from 'express';
+import helmet from 'helmet';
 import cors from 'cors';
 import path from 'path';
 import { PORT, FRONTEND_URL } from './config/env';
@@ -34,18 +35,27 @@ import { supportRouter } from './routes/support.routes';
 
 const app = express();
 
+// Güvenlik Başlıkları (HTTP Security Headers)
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: 'cross-origin' }, // Frontend origin'inden /uploads ve API erişimi için
+}));
+
 // Global Middleware'ler
 app.use(express.json());
 app.use(sanitizeInput);
 app.use(cors({ origin: [FRONTEND_URL, 'http://localhost:3000'], credentials: true }));
 
-app.use((req, res, next) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
-  next();
-});
+if (process.env.NODE_ENV !== 'production') {
+  app.use((req, res, next) => {
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+    next();
+  });
+}
 
 // Statik Yüklemeler
-app.use('/uploads', express.static(path.join(__dirname, '../public/uploads')));
+app.use('/uploads', express.static(path.join(__dirname, '../public/uploads'), {
+  setHeaders: (res) => res.setHeader('X-Content-Type-Options', 'nosniff'),
+}));
 
 // Sağlık Kontrolü
 app.get('/api/health', (req, res) => {
@@ -81,9 +91,11 @@ async function startServer() {
   });
 }
 
-startServer().catch((err) => {
-  console.error('🔥 Sunucu başlatılırken kritik hata:', err);
-  process.exit(1);
-});
+if (process.env.NODE_ENV !== 'test') {
+  startServer().catch((err) => {
+    console.error('🔥 Sunucu başlatılırken kritik hata:', err);
+    process.exit(1);
+  });
+}
 
 export default app;

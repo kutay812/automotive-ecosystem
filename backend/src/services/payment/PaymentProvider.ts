@@ -65,93 +65,64 @@ export class DummyPaymentProvider implements IPaymentProvider {
 }
 
 /**
- * 2. Iyzico Sağlayıcı İskeleti
- * Ortam değişkenleri: IYZICO_API_KEY, IYZICO_SECRET_KEY, IYZICO_BASE_URL
+ * Gerçek sağlayıcılar için ortak taban.
+ * Entegrasyon eklenene kadar (API anahtarları + resmi SDK ile imza doğrulama)
+ * checkout başlatmaz ve webhook'ları ASLA başarılı saymaz.
  */
-export class IyzicoPaymentProvider implements IPaymentProvider {
-  readonly name = 'iyzico';
-  private apiKey: string;
-  private secretKey: string;
-  private baseUrl: string;
+abstract class NotConfiguredProvider implements IPaymentProvider {
+  abstract readonly name: string;
+  protected abstract isConfigured(): boolean;
 
-  constructor() {
-    this.apiKey = process.env.IYZICO_API_KEY || '';
-    this.secretKey = process.env.IYZICO_SECRET_KEY || '';
-    this.baseUrl = process.env.IYZICO_BASE_URL || 'https://sandbox-api.iyzipay.com';
-  }
-
-  async createCheckoutSession(rental: any, user: any): Promise<CheckoutSessionResult> {
-    if (!this.apiKey || !this.secretKey) {
-      // API anahtarı girilmemişse güvenli bir şekilde Dummy moduna geri düş
-      console.warn('⚠️ Iyzico API anahtarları tanımlı değil, dummy moduna yönlendiriliyor.');
-      const dummy = new DummyPaymentProvider();
-      return dummy.createCheckoutSession(rental);
-    }
-
-    const conversationId = `rental_${rental.documentId}_${Date.now()}`;
-    // Gerçek Iyzico Checkout Form Initialize çağrısı
-    return {
-      checkoutUrl: `${this.baseUrl}/checkout/${conversationId}`,
-      transactionId: conversationId,
-    };
+  async createCheckoutSession(_rental: any, _user?: any): Promise<CheckoutSessionResult> {
+    throw new Error(
+      this.isConfigured()
+        ? `${this.name} entegrasyonu henüz uygulanmadı.`
+        : `${this.name} API anahtarları tanımlı değil.`
+    );
   }
 
   async verifyWebhook(req: any): Promise<WebhookVerificationResult> {
-    const { token, rentalId } = req.body;
-    // Iyzico imza veya token doğrulama
     return {
-      success: Boolean(token),
-      rentalId: rentalId || req.query.rentalId,
-      transactionId: token || `iyzico_txn_${genDocId()}`,
-      message: token ? 'Iyzico ödemesi onaylandı.' : 'Geçersiz Iyzico tokenı.',
+      success: false,
+      rentalId: req.body?.rentalId,
+      transactionId: '',
+      message: `${this.name} webhook doğrulaması henüz uygulanmadı.`,
     };
+  }
+}
+
+/**
+ * 2. Iyzico Sağlayıcı İskeleti
+ * Ortam değişkenleri: IYZICO_API_KEY, IYZICO_SECRET_KEY, IYZICO_BASE_URL
+ * TODO(entegrasyon): Checkout Form Initialize + CheckoutForm Retrieve ile token doğrulama.
+ */
+export class IyzicoPaymentProvider extends NotConfiguredProvider {
+  readonly name = 'iyzico';
+  protected isConfigured() {
+    return Boolean(process.env.IYZICO_API_KEY && process.env.IYZICO_SECRET_KEY);
   }
 }
 
 /**
  * 3. Stripe Sağlayıcı İskeleti
  * Ortam değişkenleri: STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET
+ * TODO(entegrasyon): checkout.sessions.create + webhooks.constructEvent (raw body gerekir).
  */
-export class StripePaymentProvider implements IPaymentProvider {
+export class StripePaymentProvider extends NotConfiguredProvider {
   readonly name = 'stripe';
-  private secretKey: string;
-  private webhookSecret: string;
-
-  constructor() {
-    this.secretKey = process.env.STRIPE_SECRET_KEY || '';
-    this.webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || '';
-  }
-
-  async createCheckoutSession(rental: any): Promise<CheckoutSessionResult> {
-    if (!this.secretKey) {
-      console.warn('⚠️ Stripe API anahtarları tanımlı değil, dummy moduna yönlendiriliyor.');
-      const dummy = new DummyPaymentProvider();
-      return dummy.createCheckoutSession(rental);
-    }
-
-    const sessionId = `cs_test_${genDocId()}`;
-    return {
-      checkoutUrl: `https://checkout.stripe.com/c/pay/${sessionId}`,
-      transactionId: sessionId,
-    };
-  }
-
-  async verifyWebhook(req: any): Promise<WebhookVerificationResult> {
-    const { rentalId, transactionId } = req.body;
-    return {
-      success: true,
-      rentalId,
-      transactionId: transactionId || `stripe_txn_${genDocId()}`,
-      message: 'Stripe webhook doğrulandı.',
-    };
+  protected isConfigured() {
+    return Boolean(process.env.STRIPE_SECRET_KEY && process.env.STRIPE_WEBHOOK_SECRET);
   }
 }
 
 /**
  * Sağlayıcı Fabrika Fonksiyonu
+ * Aktif sağlayıcı tek noktadan, sunucu ortam değişkeniyle belirlenir (PAYMENT_PROVIDER).
+ * İstemciden gelen sağlayıcı adı dikkate alınmaz; böylece doğrulaması zayıf bir
+ * sağlayıcı dışarıdan seçilemez.
  */
-export function getPaymentProvider(providerName?: string): IPaymentProvider {
-  const chosen = (providerName || process.env.DEFAULT_PAYMENT_PROVIDER || 'dummy').toLowerCase();
+export function getPaymentProvider(_requested?: string): IPaymentProvider {
+  const chosen = (process.env.PAYMENT_PROVIDER || process.env.DEFAULT_PAYMENT_PROVIDER || 'dummy').toLowerCase();
   switch (chosen) {
     case 'iyzico':
       return new IyzicoPaymentProvider();

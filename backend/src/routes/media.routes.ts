@@ -1,9 +1,9 @@
 import { Router } from 'express';
 import path from 'path';
 import fs from 'fs';
-import crypto from 'crypto';
 import { pool } from '../database/db';
 import { requireRole } from '../middlewares/auth';
+import { uploadSizeGuard, isAllowedUpload, parseMultipartUpload } from '../middlewares/upload';
 import { genDocId, now } from '../utils/helpers';
 
 export const mediaRouter = Router();
@@ -87,89 +87,45 @@ mediaRouter.delete('/admin/media/:id', requireRole('superadmin', 'admin', 'edito
 });
 
 // Medya dosyası yükle (multipart/form-data)
-mediaRouter.post('/admin/media/upload', requireRole('superadmin', 'admin', 'editor'), async (req: any, res) => {
+mediaRouter.post('/admin/media/upload', requireRole('superadmin', 'admin', 'editor'), uploadSizeGuard, async (req: any, res) => {
   try {
-    const chunks: Buffer[] = [];
-    req.on('data', (chunk: Buffer) => chunks.push(chunk));
-    req.on('end', async () => {
-      try {
-        const body = Buffer.concat(chunks);
-        const contentType = req.headers['content-type'] || '';
+    const parsed = await parseMultipartUpload(req);
+    if (!isAllowedUpload(parsed.fileName)) {
+      return res.status(400).json({ error: { message: 'Desteklenmeyen dosya türü.' } });
+    }
 
-        const boundaryMatch = contentType.match(/boundary=(.+)/);
-        if (!boundaryMatch) return res.status(400).json({ error: { message: 'Geçersiz form verisi.' } });
+    const { safeName, storedName, fileBuffer, fileMime, ext, hash, fields } = parsed;
+    const { relatedType = '', relatedId = '', field = '' } = fields;
 
-        const boundary = boundaryMatch[1];
-        const parts = body.toString('binary').split(`--${boundary}`);
+    const uploadDir = path.join(__dirname, '../../public/uploads');
+    if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+    fs.writeFileSync(path.join(uploadDir, storedName), fileBuffer);
 
-        let fileName = 'upload';
-        let fileBuffer: Buffer | null = null;
-        let fileMime = 'application/octet-stream';
-        let relatedType = '';
-        let relatedId = '';
-        let field = '';
+    const docId = genDocId();
+    const fileSize = (fileBuffer.length / 1024).toFixed(2);
+    const fileResult = await pool.query(
+      `INSERT INTO files (document_id, name, hash, ext, mime, size, url, provider, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 'local', $8, $8) RETURNING *`,
+      [docId, safeName, hash, ext, fileMime, fileSize, `/uploads/${storedName}`, now()]
+    );
 
-        for (const part of parts) {
-          if (part.includes('Content-Disposition')) {
-            const nameMatch = part.match(/name="([^"]+)"/);
-            const filenameMatch = part.match(/filename="([^"]+)"/);
-            const contentTypeMatch = part.match(/Content-Type: (.+)\r\n/);
+    if (relatedType && relatedId && field) {
+      await pool.query(
+        `INSERT INTO files_related_mph (file_id, related_id, related_type, field, "order")
+         VALUES ($1, $2, $3, $4, 1)`,
+        [fileResult.rows[0].id, parseInt(relatedId), relatedType, field]
+      );
+    }
 
-            const headerEnd = part.indexOf('\r\n\r\n');
-            if (headerEnd === -1) continue;
-            const partBody = part.slice(headerEnd + 4).replace(/\r\n$/, '');
-
-            if (filenameMatch) {
-              fileName = filenameMatch[1];
-              if (contentTypeMatch) fileMime = contentTypeMatch[1].trim();
-              fileBuffer = Buffer.from(partBody, 'binary');
-            } else if (nameMatch) {
-              const val = partBody.trim();
-              if (nameMatch[1] === 'relatedType') relatedType = val;
-              else if (nameMatch[1] === 'relatedId') relatedId = val;
-              else if (nameMatch[1] === 'field') field = val;
-            }
-          }
-        }
-
-        if (!fileBuffer) return res.status(400).json({ error: { message: 'Dosya bulunamadı.' } });
-
-        const ext = path.extname(fileName);
-        const hash = crypto.randomBytes(8).toString('hex');
-        const safeName = fileName.replace(/[^a-zA-Z0-9._-]/g, '_');
-        const storedName = `${path.basename(safeName, ext)}_${hash}${ext}`;
-
-        const uploadDir = path.join(__dirname, '../../public/uploads');
-        if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
-        fs.writeFileSync(path.join(uploadDir, storedName), fileBuffer);
-
-        const docId = genDocId();
-        const fileSize = (fileBuffer.length / 1024).toFixed(2);
-        const fileResult = await pool.query(
-          `INSERT INTO files (document_id, name, hash, ext, mime, size, url, provider, created_at, updated_at)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, 'local', $8, $8) RETURNING *`,
-          [docId, safeName, hash, ext, fileMime, fileSize, `/uploads/${storedName}`, now()]
-        );
-
-        if (relatedType && relatedId && field) {
-          await pool.query(
-            `INSERT INTO files_related_mph (file_id, related_id, related_type, field, "order")
-             VALUES ($1, $2, $3, $4, 1)`,
-            [fileResult.rows[0].id, parseInt(relatedId), relatedType, field]
-          );
-        }
-
-        res.json({
-          id: fileResult.rows[0].id,
-          url: `/uploads/${storedName}`,
-          name: safeName,
-        });
-      } catch (e: any) {
-        res.status(500).json({ error: { message: e.message } });
-      }
+    res.json({
+      id: fileResult.rows[0].id,
+      url: `/uploads/${storedName}`,
+      name: safeName,
     });
   } catch (e: any) {
-    res.status(500).json({ error: { message: e.message } });
+    if (res.headersSent) return;
+    const status = e?.message?.includes('Geçersiz form verisi') || e?.message?.includes('Dosya bulunamadı') ? 400 : 500;
+    res.status(status).json({ error: { message: e.message } });
   }
 });
 

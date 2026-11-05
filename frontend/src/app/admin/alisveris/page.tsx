@@ -1,5 +1,4 @@
-import { getAdminUser, hasRole } from '@/lib/admin-session';
-import { redirect } from 'next/navigation';
+import { requireAdminPage } from '@/lib/admin-session';
 import { fetchShopItems, fetchShopSettings } from '@/app/actions/admin';
 import AdminShell from '@/components/admin/AdminShell';
 import ShopManagementClient from '@/components/admin/ShopManagementClient';
@@ -7,9 +6,7 @@ import ShopManagementClient from '@/components/admin/ShopManagementClient';
 export const dynamic = 'force-dynamic';
 
 export default async function AlisverisPage() {
-  const admin = await getAdminUser();
-  if (!admin) redirect('/admin/login');
-  if (!hasRole(admin, 'superadmin', 'admin')) redirect('/admin');
+  const admin = await requireAdminPage('superadmin', 'admin');
 
   const items = await fetchShopItems();
   const settings = await fetchShopSettings();

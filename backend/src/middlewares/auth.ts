@@ -1,6 +1,6 @@
 import jwt from 'jsonwebtoken';
 import rateLimit from 'express-rate-limit';
-import { JWT_SECRET, ADMIN_JWT_SECRET, ADMIN_SECRET, AdminRole } from '../config/env';
+import { JWT_SECRET, ADMIN_JWT_SECRET, AdminRole } from '../config/env';
 import { pool } from '../database/db';
 
 // Global Input Sanitization Middleware (XSS Protection)
@@ -26,7 +26,6 @@ export const rateLimitMiddleware = rateLimit({
 
 // Admin Auth Middleware — Extracts admin user from JWT, attaches to req.admin
 export function adminAuthMiddleware(req: any, res: any, next: any) {
-  // Support both Bearer token and legacy secret-based auth
   const authHeader = req.headers.authorization;
   if (authHeader?.startsWith('Bearer ')) {
     try {
@@ -37,12 +36,6 @@ export function adminAuthMiddleware(req: any, res: any, next: any) {
     } catch {
       return res.status(401).json({ error: { message: 'Admin token süresi dolmuş veya geçersiz.' } });
     }
-  }
-  // Legacy fallback: secret-based auth
-  const secret = req.body?.secret || req.query?.secret;
-  if (secret === ADMIN_SECRET) {
-    req.admin = { role: 'superadmin' }; // Legacy: full access
-    return next();
   }
   return res.status(401).json({ error: { message: 'Yetkilendirme gerekli.' } });
 }

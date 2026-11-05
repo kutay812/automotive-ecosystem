@@ -1,13 +1,10 @@
-import { getAdminUser, hasRole } from '@/lib/admin-session';
-import { redirect } from 'next/navigation';
+import { requireAdminPage } from '@/lib/admin-session';
 import { fetchHomepageMedia } from '@/app/actions/admin';
 import AdminShell from '@/components/admin/AdminShell';
 import HomepageMediaClient from '@/components/admin/HomepageMediaClient';
 
 export default async function AnasayfaIcerikPage() {
-  const admin = await getAdminUser();
-  if (!admin) redirect('/admin/login');
-  if (!hasRole(admin, 'superadmin', 'admin', 'editor')) redirect('/admin');
+  const admin = await requireAdminPage('superadmin', 'admin', 'editor');
 
   const media = await fetchHomepageMedia();
 

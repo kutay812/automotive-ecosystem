@@ -1,5 +1,4 @@
-import { getAdminUser, hasRole } from '@/lib/admin-session';
-import { redirect } from 'next/navigation';
+import { requireAdminPage } from '@/lib/admin-session';
 import { fetchAdminCars, fetchAdminOffices } from '@/app/actions/admin';
 import AdminShell from '@/components/admin/AdminShell';
 import CarManagementClient from '@/components/admin/CarManagementClient';
@@ -7,9 +6,7 @@ import CarManagementClient from '@/components/admin/CarManagementClient';
 export const dynamic = 'force-dynamic';
 
 export default async function AraclarPage() {
-  const admin = await getAdminUser();
-  if (!admin) redirect('/admin/login');
-  if (!hasRole(admin, 'superadmin', 'admin')) redirect('/admin');
+  const admin = await requireAdminPage('superadmin', 'admin');
 
   const [cars, offices] = await Promise.all([
     fetchAdminCars(),

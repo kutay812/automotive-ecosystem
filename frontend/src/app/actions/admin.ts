@@ -20,7 +20,7 @@ export async function adminLogin(email: string, password: string) {
     const cookieStore = await cookies();
     cookieStore.set('admin_token', data.jwt, {
       httpOnly: true,
-      secure: false,
+      secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       path: '/',
       maxAge: 60 * 60 * 24, // 1 gün
@@ -108,7 +108,7 @@ async function adminFetch<T = any>(
     if (tagsToRevalidate) {
       for (const tag of tagsToRevalidate) {
         try {
-          (revalidateTag as any)(tag, 'default');
+          revalidateTag(tag, 'default');
         } catch {}
       }
     }

@@ -1,9 +1,8 @@
+
 import { Router } from 'express';
-import jwt from 'jsonwebtoken';
 import { pool } from '../database/db';
 import { authMiddleware, requireRole, rateLimitMiddleware } from '../middlewares/auth';
 import { asyncHandler } from '../middlewares/asyncHandler';
-import { ADMIN_JWT_SECRET, ADMIN_SECRET } from '../config/env';
 import { genDocId, now, formatRental, getEnrichedRentals } from '../utils/helpers';
 import { invalidateCache } from '../config/redis';
 import { getPaymentProvider } from '../services/payment/PaymentProvider';
@@ -23,28 +22,9 @@ import {
 
 export const rentalRouter = Router();
 
-// Admin aksiyon yetki doğrulayıcı helper
+// Admin aksiyon helper (yetki requireRole ile route seviyesinde doğrulanır)
 async function adminRentalAction(req: any, res: any, updateFn: (rentalId: string) => Promise<void>) {
   try {
-    if (!req.admin) {
-      const authHeader = req.headers.authorization;
-      if (authHeader?.startsWith('Bearer ')) {
-        try {
-          const payload = jwt.verify(authHeader.split(' ')[1], ADMIN_JWT_SECRET) as any;
-          req.admin = payload;
-        } catch {
-          return res.status(401).json({ error: { message: 'Geçersiz admin token.' } });
-        }
-      } else if (req.body?.secret === ADMIN_SECRET) {
-        req.admin = { role: 'superadmin' };
-      } else {
-        return res.status(401).json({ error: { message: 'Yetkilendirme gerekli.' } });
-      }
-    }
-    const allowedRoles = ['superadmin', 'admin'];
-    if (!allowedRoles.includes(req.admin.role)) {
-      return res.status(403).json({ error: { message: 'Bu işlem için yetkiniz yok.' } });
-    }
     await updateFn(req.body.rentalId);
     res.json({ ok: true });
   } catch (e: any) {
@@ -283,43 +263,52 @@ rentalRouter.get(
   })
 );
 
-rentalRouter.post('/rental-operations/admin/approve', (req, res) =>
+rentalRouter.post('/rental-operations/admin/approve', requireRole('superadmin', 'admin'), (req, res) =>
   adminRentalAction(req, res, approveRentalService)
 );
 
-rentalRouter.post('/rental-operations/admin/reject', (req, res) =>
+rentalRouter.post('/rental-operations/admin/reject', requireRole('superadmin', 'admin'), (req, res) =>
   adminRentalAction(req, res, rejectRentalService)
 );
 
-rentalRouter.post('/rental-operations/admin/reject-early-return', (req, res) =>
+rentalRouter.post('/rental-operations/admin/reject-early-return', requireRole('superadmin', 'admin'), (req, res) =>
   adminRentalAction(req, res, rejectEarlyReturnService)
 );
 
-rentalRouter.post('/rental-operations/admin/approve-extension', (req, res) =>
+rentalRouter.post('/rental-operations/admin/approve-extension', requireRole('superadmin', 'admin'), (req, res) =>
   adminRentalAction(req, res, approveExtensionService)
 );
 
-rentalRouter.post('/rental-operations/admin/reject-extension', (req, res) =>
+rentalRouter.post('/rental-operations/admin/reject-extension', requireRole('superadmin', 'admin'), (req, res) =>
   adminRentalAction(req, res, rejectExtensionService)
 );
 
-rentalRouter.post('/rental-operations/admin/complete', (req, res) =>
+rentalRouter.post('/rental-operations/admin/complete', requireRole('superadmin', 'admin'), (req, res) =>
   adminRentalAction(req, res, completeRentalService)
 );
 
-rentalRouter.post('/rental-operations/admin/approve-early-return', (req, res) =>
+rentalRouter.post('/rental-operations/admin/approve-early-return', requireRole('superadmin', 'admin'), (req, res) =>
   adminRentalAction(req, res, approveEarlyReturnService)
 );
 
-rentalRouter.post('/rental-operations/admin/mark-paid', (req, res) =>
+rentalRouter.post('/rental-operations/admin/mark-paid', requireRole('superadmin', 'admin'), (req, res) =>
   adminRentalAction(req, res, markRentalPaidService)
 );
 
-rentalRouter.post('/rental-operations/admin/unmark-paid', (req, res) =>
+rentalRouter.post('/rental-operations/admin/unmark-paid', requireRole('superadmin', 'admin'), (req, res) =>
   adminRentalAction(req, res, unmarkRentalPaidService)
 );
 
 // Strapi uyumlu kiralama listeleme (N+1 engellendi)
+// Public müsaitlik listesi: yalnızca çakışma kontrolü için gerekli alanlar döner (PII yok)
+const toAvailability = (r: any) => ({
+  car: r.car ? { id: r.car.id } : null,
+  rentalStatus: r.rentalStatus,
+  startDate: r.startDate,
+  endDate: r.endDate,
+  requestedEndDate: r.requestedEndDate,
+});
+
 rentalRouter.get(
   '/rentals',
   asyncHandler(async (req, res) => {
@@ -331,9 +320,9 @@ rentalRouter.get(
         `WHERE r.rental_status NOT IN (${placeholders}) ORDER BY r.created_at DESC`,
         notIn
       );
-      return res.json({ data: formatted });
+      return res.json({ data: formatted.map(toAvailability) });
     }
     const formatted = await getEnrichedRentals('ORDER BY r.created_at DESC');
-    res.json({ data: formatted });
+    res.json({ data: formatted.map(toAvailability) });
   })
 );

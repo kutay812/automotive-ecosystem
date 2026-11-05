@@ -1,7 +1,8 @@
 import { Router } from 'express';
 import { pool } from '../database/db';
 import { requireRole } from '../middlewares/auth';
-import { genDocId, now } from '../utils/helpers';
+import { genDocId, now, buildUpdateQuery } from '../utils/helpers';
+import { asyncHandler } from '../middlewares/asyncHandler';
 import { getCache, setCache, invalidateCache } from '../config/redis';
 
 export const officeRouter = Router();
@@ -79,21 +80,23 @@ officeRouter.put('/admin/offices/:id', requireRole('superadmin', 'admin'), async
       return res.status(400).json({ error: { message: 'Kapanış saati HH:mm formatında olmalıdır (Örn: 18:00).' } });
     }
 
-    const sets = ['updated_at = $1'];
-    const vals: any[] = [now()];
-    let idx = 2;
+    const query = buildUpdateQuery(
+      'offices',
+      {
+        name,
+        city,
+        address,
+        phone,
+        is_active: isActive,
+        location,
+        opening_time: openingTime,
+        closing_time: closingTime,
+      },
+      'document_id =  OR id::text = ',
+      [req.params.id]
+    );
 
-    if (name !== undefined) { sets.push(`name = $${idx}`); vals.push(name); idx++; }
-    if (city !== undefined) { sets.push(`city = $${idx}`); vals.push(city); idx++; }
-    if (address !== undefined) { sets.push(`address = $${idx}`); vals.push(address); idx++; }
-    if (phone !== undefined) { sets.push(`phone = $${idx}`); vals.push(phone); idx++; }
-    if (isActive !== undefined) { sets.push(`is_active = $${idx}`); vals.push(isActive); idx++; }
-    if (location !== undefined) { sets.push(`location = $${idx}`); vals.push(location); idx++; }
-    if (openingTime !== undefined) { sets.push(`opening_time = $${idx}`); vals.push(openingTime); idx++; }
-    if (closingTime !== undefined) { sets.push(`closing_time = $${idx}`); vals.push(closingTime); idx++; }
-
-    vals.push(req.params.id);
-    await pool.query(`UPDATE offices SET ${sets.join(', ')} WHERE document_id = $${idx} OR id::text = $${idx}`, vals);
+    await pool.query(query.text, query.values);
 
     await invalidateCache('offices:*');
 
